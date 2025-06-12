@@ -1,0 +1,94 @@
+[package]
+name = "geotiles"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+authors = ["Your Name <rltvty@gmail.com>"]
+license = "MIT"
+description = "A Rust library for generating geodesic polyhedra with hexagonal and pentagonal tiles"
+homepage = "https://github.com/rltvty/geotiles"
+repository = "https://github.com/rltvty/geotiles"
+documentation = "https://docs.rs/geotiles"
+readme = "README.md"
+keywords = ["geodesic", "polyhedron", "sphere", "tessellation", "geometry"]
+categories = ["algorithms", "graphics", "mathematics", "science"]
+exclude = [
+    "examples/output/*",
+    "docs/images/*",
+    ".github/*",
+]
+
+[dependencies]
+# No external dependencies for the core library
+# This keeps the library lightweight and reduces the dependency tree
+
+[dev-dependencies]
+# Development and testing dependencies
+criterion = "0.5"
+proptest = "1.0"
+approx = "0.5"
+
+# [features]
+# default = []
+# # Optional features for extended functionality
+# serde = ["dep:serde"]
+# bevy = ["dep:bevy"]
+
+# # Optional dependencies (only included if features are enabled)
+# [dependencies.serde]
+# version = "1.0"
+# features = ["derive"]
+# optional = true
+
+# [dependencies.bevy]
+# version = "0.12"
+# optional = true
+
+# [[example]]
+# name = "basic_usage"
+# path = "examples/basic_usage.rs"
+
+# [[example]]
+# name = "export_formats"
+# path = "examples/export_formats.rs"
+
+# [[example]]
+# name = "regular_hexagon_approximation"
+# path = "examples/regular_hexagon_approximation.rs"
+
+# [[example]]
+# name = "thick_tiles"
+# path = "examples/thick_tiles.rs"
+
+# [[example]]
+# name = "statistical_analysis"
+# path = "examples/statistical_analysis.rs"
+
+# [[example]]
+# name = "bevy_integration"
+# path = "examples/bevy_integration.rs"
+# required-features = ["bevy"]
+
+# [[bench]]
+# name = "subdivision_performance"
+# harness = false
+
+# [[bench]]
+# name = "tile_generation"
+# harness = false
+
+# [package.metadata.docs.rs]
+# # Configuration for docs.rs
+# all-features = true
+# rustdoc-args = ["--cfg", "docsrs"]
+
+# [profile.release]
+# # Optimizations for release builds
+# lto = true
+# codegen-units = 1
+# panic = "abort"
+
+# [profile.bench]
+# # Optimizations for benchmarks
+# debug = true
+# lto = true
