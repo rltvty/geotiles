@@ -119,6 +119,7 @@ impl Hexasphere {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::Hexasphere;
     /// // Small sphere for testing
     /// let small = Hexasphere::new(1.0, 2, 1.0);
     ///
@@ -185,7 +186,7 @@ impl Hexasphere {
             [9, 1, 11],
         ];
 
-        let mut faces: Vec<Face> = face_indices
+        let faces: Vec<Face> = face_indices
             .into_iter()
             .enumerate()
             .map(|(id, [i, j, k])| {
@@ -223,7 +224,7 @@ impl Hexasphere {
                 if let Some(projected_point) = find_projected_point(point, &projected_points) {
                     point_to_faces
                         .entry(projected_point.clone())
-                        .or_insert_with(Vec::new)
+                        .or_default()
                         .push(face_idx);
                 }
             }
@@ -419,6 +420,8 @@ impl Hexasphere {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::Hexasphere;
+    /// let hexasphere = Hexasphere::new(1.0, 2, 1.0);
     /// let orientations = hexasphere.get_tile_orientations();
     ///
     /// for (i, orientation_opt) in orientations.iter().enumerate() {
@@ -484,6 +487,9 @@ impl Hexasphere {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::Point;
+    /// use geotiles::Hexasphere;
+    /// let hexasphere = Hexasphere::new(10.0, 4, 0.9);
     /// let hex_orientations = hexasphere.get_hexagon_orientations();
     /// let uniform_radius = hexasphere.get_uniform_hexagon_radius();
     ///
@@ -557,6 +563,7 @@ impl Hexasphere {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::Hexasphere;
     /// let outer_sphere = Hexasphere::new(10.0, 4, 0.9);
     /// let inner_sphere = outer_sphere.create_inner_sphere(9.0);
     ///
@@ -665,6 +672,7 @@ impl Hexasphere {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::Hexasphere;
     /// let hexasphere = Hexasphere::new(10.0, 4, 0.9);
     /// let thick_tiles = hexasphere.create_thick_tiles(0.5);
     ///

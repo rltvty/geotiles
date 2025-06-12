@@ -91,8 +91,9 @@ impl Tile {
     /// # Examples
     ///
     /// ```rust
-    /// use geotiles::Tile
-    /// let tile = Tile::new(vertex, &mut surrounding_faces, 0.9);
+    /// use geotiles::{Face, Tile, Vertex3};
+    /// let surrounding_faces: [Face] = []
+    /// let tile = Tile::new(Vertex3::new(0.1,0.2,0.3), &mut surrounding_faces, 0.9);
     /// // Creates a tile that's 90% of full size
     /// ```
     pub fn new(center_point: Point, faces: &mut [Face], hex_size: f64) -> Self {
@@ -230,6 +231,9 @@ impl Tile {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::{Face, Tile, Vertex3};
+    /// let surrounding_faces: [Face] = []
+    /// let tile = Tile::new(Vertex3::new(0.1,0.2,0.3), &mut surrounding_faces, 0.9);
     /// let lat_lon = tile.get_lat_lon(10.0);
     /// println!("Tile at {:.2}°N, {:.2}°E", lat_lon.lat, lat_lon.lon);
     ///
@@ -260,6 +264,9 @@ impl Tile {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::{Face, Tile, Vertex3};
+    /// let surrounding_faces: [Face] = []
+    /// let tile = Tile::new(Vertex3::new(0.1,0.2,0.3), &mut surrounding_faces, 0.9);
     /// // Get coordinates of all boundary points
     /// for i in 0..tile.boundary.len() {
     ///     if let Some(lat_lon) = tile.get_boundary_lat_lon(10.0, i) {
@@ -282,7 +289,7 @@ impl Tile {
     /// # Arguments
     ///
     /// * `scale` - How much to scale down (0.0 = point at center, 1.0 = original size)
-    ///             Automatically clamped to [0.0, 1.0]
+    ///   Automatically clamped to [0.0, 1.0]
     ///
     /// # Returns
     ///
@@ -303,6 +310,9 @@ impl Tile {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::{Face, Tile, Vertex3};
+    /// let surrounding_faces: [Face] = []
+    /// let tile = Tile::new(Vertex3::new(0.1,0.2,0.3), &mut surrounding_faces, 1.0);
     /// // Create tile with 10% border gap
     /// let smaller_boundary = tile.scaled_boundary(0.9);
     ///
@@ -328,6 +338,9 @@ impl Tile {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::{Face, Tile, Vertex3};
+    /// let surrounding_faces: [Face] = []
+    /// let tile = Tile::new(Vertex3::new(0.1,0.2,0.3), &mut surrounding_faces, 0.9);
     /// if tile.is_hexagon() {
     ///     // Apply hexagon-specific processing
     ///     let regular_params = tile.get_regular_hexagon_params();
@@ -384,6 +397,9 @@ impl Tile {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::{Face, Tile, Vertex3};
+    /// let surrounding_faces: [Face] = []
+    /// let tile = Tile::new(Vertex3::new(0.1,0.2,0.3), &mut surrounding_faces, 0.9);
     /// let radius = tile.get_average_radius();
     /// println!("Tile size: {:.3} units", radius);
     ///
@@ -434,6 +450,9 @@ impl Tile {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::{Face, Tile, Vertex3};
+    /// let surrounding_faces: [Face] = []
+    /// let tile = Tile::new(Vertex3::new(0.1,0.2,0.3), &mut surrounding_faces, 0.9);
     /// let edge_length = tile.get_average_edge_length();
     /// let radius = tile.get_average_radius();
     ///
@@ -489,6 +508,9 @@ impl Tile {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::{Face, Tile, Vertex3};
+    /// let surrounding_faces: [Face] = []
+    /// let tile = Tile::new(Vertex3::new(0.1,0.2,0.3), &mut surrounding_faces, 0.9);
     /// let area = tile.get_area();
     /// println!("Tile covers {:.6} square units", area);
     ///
@@ -551,6 +573,9 @@ impl Tile {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::{Face, Tile, Vertex3};
+    /// let surrounding_faces: [Face] = []
+    /// let tile = Tile::new(Vertex3::new(0.1,0.2,0.3), &mut surrounding_faces, 0.9);
     /// if let Some(orientation) = tile.get_orientation() {
     ///     let transform = orientation.to_transform_matrix(&tile.center_point);
     ///     
@@ -625,6 +650,9 @@ impl Tile {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::{Face, Tile, Vertex3};
+    /// let surrounding_faces: [Face] = []
+    /// let tile = Tile::new(Vertex3::new(0.1,0.2,0.3), &mut surrounding_faces, 0.9);
     /// if let Some(hex_params) = tile.get_regular_hexagon_params() {
     ///     let vertices = hex_params.generate_vertices();
     ///     println!("Regular hexagon has {} vertices", vertices.len()); // Always 6
@@ -667,6 +695,7 @@ impl std::fmt::Display for Tile {
     /// # Examples
     ///
     /// ```rust
+    /// use std::collections::HashMap;
     /// let tile_id = tile.to_string();
     /// println!("Processing tile: {}", tile); // Uses this Display implementation
     ///

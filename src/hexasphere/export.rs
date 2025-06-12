@@ -147,7 +147,7 @@ impl Hexasphere {
         // Write faces
         obj_text.push_str("\n# faces\n");
         for face in &faces {
-            obj_text.push_str("f");
+            obj_text.push('f');
             for &index in face {
                 obj_text.push_str(&format!(" {}", index));
             }

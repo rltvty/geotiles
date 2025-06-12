@@ -148,7 +148,7 @@ impl Point {
     ///
     /// * `other` - The endpoint of the line segment
     /// * `percent` - Position along the segment (0.0 = this point, 1.0 = other point)
-    ///               Automatically clamped to range [0.01, 1.0]
+    ///   Automatically clamped to range [0.01, 1.0]
     ///
     /// # Returns
     ///
@@ -184,7 +184,7 @@ impl Point {
     ///
     /// * `radius` - Target radius of the sphere
     /// * `percent` - How much of the projection to apply (0.0 = no change, 1.0 = full projection)
-    ///               Automatically clamped to range [0.0, 1.0]
+    ///   Automatically clamped to range [0.0, 1.0]
     ///
     /// # Returns
     ///
@@ -234,6 +234,7 @@ impl Point {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::Point;
     /// let point = Point::new(10.0, 0.0, 0.0); // Point on equator
     /// let lat_lon = point.to_lat_lon(10.0);
     /// assert!((lat_lon.lat - 0.0).abs() < 0.1); // Near equator

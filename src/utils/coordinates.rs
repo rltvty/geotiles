@@ -7,6 +7,7 @@
 /// # Examples
 ///
 /// ```rust
+/// use geotiles::LatLon;
 /// let lat_lon = LatLon { lat: 40.7128, lon: -74.0060 }; // New York City
 /// ```
 #[derive(Debug, Clone)]

@@ -49,6 +49,9 @@ use std::collections::HashMap;
 /// # Examples
 ///
 /// ```rust
+/// use geotiles::utils::calculate_surface_normal;
+/// use geotiles::Point;
+/// 
 /// // Counter-clockwise triangle (normal points up)
 /// let p1 = Point::new(0.0, 0.0, 0.0);
 /// let p2 = Point::new(1.0, 0.0, 0.0);
@@ -121,6 +124,8 @@ pub fn calculate_surface_normal(p1: &Point, p2: &Point, p3: &Point) -> Point {
 /// # Examples
 ///
 /// ```rust
+/// use geotiles::Point;
+/// use geotiles::utils::pointing_away_from_origin;
 /// // Point on sphere surface pointing outward
 /// let center = Point::new(5.0, 5.0, 5.0);  // On sphere surface
 /// let outward = Point::new(1.0, 1.0, 1.0); // Same direction as center
@@ -224,7 +229,11 @@ pub fn pointing_away_from_origin(point: &Point, vector: &Point) -> bool {
 /// assert_eq!(subdivided.len(), 4);
 ///
 /// // Subdivide twice (1 → 16 triangles)
-/// let face2 = Face::new(1, /* ... */);
+/// let face2 = Face::new(1,
+///     Point::new(0.0, 0.0, 1.0),
+///     Point::new(1.0, 0.0, 1.0),
+///     Point::new(0.5, 1.0, 1.0)
+/// );
 /// let subdivided2 = subdivide_face(face2, 2, &mut points, &mut face_id);
 /// assert_eq!(subdivided2.len(), 16);
 /// ```
@@ -435,6 +444,10 @@ pub fn subdivide_edge(
 /// # Examples
 ///
 /// ```rust
+/// use geotiles::Point;
+/// use geotiles::utils::get_or_insert_point;
+/// use std::collections::HashMap;
+/// 
 /// let mut points = HashMap::new();
 ///
 /// let p1 = Point::new(1.0, 2.0, 3.0);
@@ -526,6 +539,9 @@ pub fn get_or_insert_point(point: Point, points: &mut HashMap<Point, Point>) -> 
 /// # Examples
 ///
 /// ```rust
+/// use geotiles::utils::find_projected_point;
+/// use geotiles::Point;
+/// use std::collections::HashMap;
 /// let mut projected_points = HashMap::new();
 ///
 /// // Original point (before projection)
@@ -557,7 +573,7 @@ pub fn find_projected_point(
     projected_points: &HashMap<Point, Point>,
 ) -> Option<Point> {
     // This is a simplified version - in practice you might need more sophisticated matching
-    for (projected, _) in projected_points {
+    for projected in projected_points.keys() {
         // Check if this could be the projected version by comparing normalized directions
         let orig_mag = (original.x.powi(2) + original.y.powi(2) + original.z.powi(2)).sqrt();
         let orig_norm = Point::new(
@@ -619,6 +635,7 @@ pub fn find_projected_point(
 /// A complete implementation might:
 ///
 /// ```rust
+/// use geotiles::{Face, Point};
 /// fn sort_faces_around_point(faces: &mut [Face], point: &Point) {
 ///     // 1. Calculate angles or use edge adjacency to determine order
 ///     // 2. Sort faces by angle around the central point
@@ -645,6 +662,9 @@ pub fn find_projected_point(
 /// # Examples (Conceptual)
 ///
 /// ```rust
+/// use geotiles::utils::sort_faces_around_point;
+/// use geotiles::Point;
+/// 
 /// let mut faces = vec![face1, face2, face3, face4, face5];
 /// let center_point = Point::new(0.0, 0.0, 0.0);
 ///
@@ -663,7 +683,7 @@ pub fn find_projected_point(
 /// - Time complexity: O(n log n) for sorting, or O(n²) for adjacency-based ordering
 /// - Space complexity: O(n) for temporary data structures
 /// - Geometric calculations: Angle computation or edge comparison overhead
-pub fn sort_faces_around_point(faces: &mut [Face], _point: &Point) {
+pub fn sort_faces_around_point(_faces: &mut [Face], _point: &Point) {
     // This is a simplified version - the original JS has more complex ordering logic
     // For now, we'll keep the faces in their current order
     // A full implementation would sort faces to be adjacent around the point

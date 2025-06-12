@@ -73,6 +73,7 @@ impl ThickTile {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::ThickTile;
     /// let surface_tile = &hexasphere.tiles[0];
     /// let thick_tile = ThickTile::from_surface_tile(surface_tile, 0.2);
     /// assert_eq!(thick_tile.thickness, 0.2);
@@ -186,7 +187,7 @@ impl ThickTile {
             vertices.push(point.clone());
         }
         let inner_boundary_start = vertex_count;
-        vertex_count += self.inner_boundary.len();
+        // vertex_count += self.inner_boundary.len();
 
         // Create inner face triangles (reversed winding for inward-facing normal)
         for i in 0..self.inner_boundary.len() {
