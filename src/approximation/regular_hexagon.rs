@@ -14,6 +14,9 @@ use std::f64::consts::PI;
 /// # Examples
 ///
 /// ```rust
+/// # use geotiles::{Hexasphere, RegularHexagonParams};
+/// # let hexasphere = Hexasphere::new(10.0, 2, 0.8);
+/// # let tile = &hexasphere.tiles[0];
 /// if let Some(hex_params) = tile.get_regular_hexagon_params() {
 ///     let vertices = hex_params.generate_vertices();
 ///     // Use vertices for rendering, collision detection, etc.
@@ -51,6 +54,10 @@ impl RegularHexagonParams {
     /// # Examples
     ///
     /// ```rust
+    /// # use geotiles::{Hexasphere, RegularHexagonParams};
+    /// # let hexasphere = Hexasphere::new(10.0, 2, 0.8);
+    /// # let tile = &hexasphere.tiles[0];
+    /// # let hex_params = tile.get_regular_hexagon_params().unwrap();
     /// let vertices = hex_params.generate_vertices();
     /// assert_eq!(vertices.len(), 6);
     ///

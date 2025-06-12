@@ -13,7 +13,7 @@ use std::f64::consts::PI;
 /// # Examples
 ///
 /// ```rust
-/// use hexasphere::Point;
+/// use geotiles::geometry::Point;
 ///
 /// let p1 = Point::new(1.0, 2.0, 3.0);
 /// let p2 = Point::new(4.0, 5.0, 6.0);
@@ -54,6 +54,8 @@ impl Point {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::geometry::Point;
+    ///
     /// let point = Point::new(1.23456, 2.34567, 3.45678);
     /// assert_eq!(point.x, 1.235); // Rounded to 3 decimal places
     /// ```
@@ -80,6 +82,8 @@ impl Point {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::geometry::Point;
+    ///
     /// let p1 = Point::new(0.0, 0.0, 0.0);
     /// let p2 = Point::new(3.0, 4.0, 0.0);
     /// assert_eq!(p1.distance_to(&p2), 5.0); // 3-4-5 triangle
@@ -107,6 +111,8 @@ impl Point {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::geometry::Point;
+    ///
     /// let p1 = Point::new(0.0, 0.0, 0.0);
     /// let p2 = Point::new(3.0, 0.0, 0.0);
     /// let subdivided = p1.subdivide(&p2, 3);
@@ -151,6 +157,8 @@ impl Point {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::geometry::Point;
+    ///
     /// let center = Point::new(0.0, 0.0, 0.0);
     /// let edge = Point::new(10.0, 0.0, 0.0);
     ///
@@ -185,6 +193,8 @@ impl Point {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::geometry::Point;
+    ///
     /// let mut point = Point::new(3.0, 4.0, 0.0);
     /// point.project(10.0, 1.0); // Project onto sphere of radius 10
     ///

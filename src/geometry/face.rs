@@ -18,9 +18,15 @@ use crate::geometry::Point;
 /// # Examples
 ///
 /// ```rust
-/// let face = Face::new(0, point1, point2, point3);
+/// use geotiles::{Face, Point};
+/// let point1 = Point::new(0.0, 0.0, 0.0);
+/// let point2 = Point::new(1.0, 0.0, 0.0);
+/// let point3 = Point::new(0.0, 1.0, 0.0);
+/// let mut face = Face::new(0, point1, point2, point3);
 ///
 /// // Check if two faces share an edge
+/// let face1 = Face::new(0, Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0), Point::new(0.0, 1.0, 0.0));
+/// let face2 = Face::new(1, Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0), Point::new(1.0, 1.0, 0.0));
 /// if face1.is_adjacent_to(&face2) {
 ///     println!("Faces share an edge");
 /// }
@@ -49,6 +55,7 @@ impl Face {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::{Face, Point};
     /// let face = Face::new(
     ///     0,
     ///     Point::new(0.0, 0.0, 0.0),
@@ -81,6 +88,9 @@ impl Face {
     /// # Examples
     ///
     /// ```rust
+    /// # use geotiles::{Face, Point};
+    /// # let face = Face::new(0, Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0), Point::new(0.0, 1.0, 0.0));
+    /// # let vertex = Point::new(0.0, 0.0, 0.0);
     /// let others = face.get_other_points(&vertex);
     /// assert_eq!(others.len(), 2); // Always returns exactly 2 points
     /// ```
@@ -105,6 +115,10 @@ impl Face {
     /// # Examples
     ///
     /// ```rust
+    /// # use geotiles::{Face, Point};
+    /// # let face = Face::new(0, Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0), Point::new(0.0, 1.0, 0.0));
+    /// # let point1 = Point::new(0.0, 0.0, 0.0);
+    /// # let point2 = Point::new(1.0, 0.0, 0.0);
     /// if let Some(third_point) = face.find_third_point(&point1, &point2) {
     ///     println!("Found the third vertex: {}", third_point);
     /// }
@@ -130,6 +144,9 @@ impl Face {
     /// # Examples
     ///
     /// ```rust
+    /// # use geotiles::{Face, Point};
+    /// # let face1 = Face::new(0, Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0), Point::new(0.0, 1.0, 0.0));
+    /// # let face2 = Face::new(1, Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0), Point::new(1.0, 1.0, 0.0));
     /// if face1.is_adjacent_to(&face2) {
     ///     println!("Faces {} and {} share an edge", face1.id, face2.id);
     /// }
@@ -164,6 +181,8 @@ impl Face {
     /// # Examples
     ///
     /// ```rust
+    /// # use geotiles::{Face, Point};
+    /// # let mut face = Face::new(0, Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0), Point::new(0.0, 1.0, 0.0));
     /// let centroid = face.get_centroid();
     /// // The centroid is equidistant from all three vertices
     /// ```

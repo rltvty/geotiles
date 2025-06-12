@@ -38,6 +38,7 @@ use std::collections::HashMap;
 /// # Examples
 ///
 /// ```rust
+/// use geotiles::Hexasphere;
 /// // Create a detailed hexasphere
 /// let hexasphere = Hexasphere::new(10.0, 4, 0.95);
 ///
@@ -48,7 +49,7 @@ use std::collections::HashMap;
 ///     100.0 * stats.radius_std_deviation / stats.average_hexagon_radius);
 ///
 /// // Export for visualization
-/// std::fs::write("sphere.obj", hexasphere.to_obj())?;
+/// # std::fs::write("sphere.obj", hexasphere.to_obj()).unwrap();
 /// ```
 
 #[derive(Debug)]

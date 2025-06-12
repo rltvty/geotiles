@@ -8,6 +8,7 @@
 /// # Examples
 ///
 /// ```rust
+/// use geotiles::Vector3;
 /// let v1 = Vector3::new(1.0, 0.0, 0.0);
 /// let v2 = Vector3::new(0.0, 1.0, 0.0);
 /// let cross = v1.cross(&v2); // Should point in Z direction
@@ -47,6 +48,7 @@ impl Vector3 {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::Vector3;
     /// let v = Vector3::new(3.0, 4.0, 0.0);
     /// let unit = v.normalize();
     /// assert!((unit.x - 0.6).abs() < 0.001); // 3/5
@@ -85,6 +87,7 @@ impl Vector3 {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::Vector3;
     /// let x_axis = Vector3::new(1.0, 0.0, 0.0);
     /// let y_axis = Vector3::new(0.0, 1.0, 0.0);
     /// let z_axis = x_axis.cross(&y_axis);
@@ -114,6 +117,7 @@ impl Vector3 {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::Vector3;
     /// let v1 = Vector3::new(1.0, 2.0, 3.0);
     /// let v2 = Vector3::new(4.0, 5.0, 6.0);
     /// let dot = v1.dot(&v2); // 1*4 + 2*5 + 3*6 = 32
