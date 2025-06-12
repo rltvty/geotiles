@@ -1,11 +1,11 @@
 //! Core tile implementation.
 
-use std::collections::HashMap;
-use crate::geometry::{Point, Face};
-use crate::utils::{calculate_surface_normal, pointing_away_from_origin, triangle_area, LatLon};
+use super::orientation::TileOrientation;
 use crate::approximation::RegularHexagonParams;
 use crate::geometry::Vector3;
-use super::orientation::TileOrientation;
+use crate::geometry::{Face, Point};
+use crate::utils::{calculate_surface_normal, pointing_away_from_origin, triangle_area, LatLon};
+use std::collections::HashMap;
 
 /// A polygonal tile on the geodesic sphere surface.
 ///
@@ -42,7 +42,7 @@ use super::orientation::TileOrientation;
 ///     let lat_lon = tile.get_lat_lon(sphere_radius);
 ///     println!("Hexagon at {:.2}°N, {:.2}°E", lat_lon.lat, lat_lon.lon);
 /// }
-/// 
+///
 /// // Get regular hexagon approximation
 /// if let Some(hex_params) = tile.get_regular_hexagon_params() {
 ///     let vertices = hex_params.generate_vertices();
@@ -97,7 +97,7 @@ impl Tile {
     /// ```
     pub fn new(center_point: Point, faces: &mut [Face], hex_size: f64) -> Self {
         let hex_size = hex_size.clamp(0.01, 1.0);
-        
+
         let mut boundary = Vec::new();
         let mut neighbor_hash = HashMap::new();
 
@@ -149,11 +149,8 @@ impl Tile {
     /// 3. If normal points inward, reverse the boundary vertex order
     fn fix_boundary_orientation(&mut self) {
         if self.boundary.len() >= 3 {
-            let normal = calculate_surface_normal(
-                &self.boundary[1],
-                &self.boundary[2],
-                &self.boundary[0],
-            );
+            let normal =
+                calculate_surface_normal(&self.boundary[1], &self.boundary[2], &self.boundary[0]);
 
             if !pointing_away_from_origin(&self.center_point, &normal) {
                 self.boundary.reverse();
@@ -167,14 +164,17 @@ impl Tile {
 
         let hexasphere = Hexasphere::new(10.0, 2, 0.8);
         let thick_tiles = hexasphere.create_thick_tiles(0.5);
-        
+
         assert_eq!(thick_tiles.len(), hexasphere.tiles.len());
-        
+
         // Test first thick tile
         if let Some(thick_tile) = thick_tiles.first() {
-            assert_eq!(thick_tile.outer_boundary.len(), thick_tile.inner_boundary.len());
+            assert_eq!(
+                thick_tile.outer_boundary.len(),
+                thick_tile.inner_boundary.len()
+            );
             assert!(thick_tile.thickness > 0.0);
-            
+
             let vertices = thick_tile.generate_all_vertices();
             assert!(vertices.vertices.len() > 0);
             assert!(vertices.indices.len() > 0);
@@ -188,19 +188,21 @@ impl Tile {
 
         let outer_sphere = Hexasphere::new(10.0, 2, 0.8);
         let inner_sphere = outer_sphere.create_inner_sphere(9.0);
-        
+
         assert_eq!(inner_sphere.radius, 9.0);
         assert_eq!(inner_sphere.tiles.len(), outer_sphere.tiles.len());
-        
+
         // Check that tiles are properly scaled
         for (outer_tile, inner_tile) in outer_sphere.tiles.iter().zip(inner_sphere.tiles.iter()) {
-            let outer_distance = (outer_tile.center_point.x.powi(2) + 
-                                 outer_tile.center_point.y.powi(2) + 
-                                 outer_tile.center_point.z.powi(2)).sqrt();
-            let inner_distance = (inner_tile.center_point.x.powi(2) + 
-                                 inner_tile.center_point.y.powi(2) + 
-                                 inner_tile.center_point.z.powi(2)).sqrt();
-            
+            let outer_distance = (outer_tile.center_point.x.powi(2)
+                + outer_tile.center_point.y.powi(2)
+                + outer_tile.center_point.z.powi(2))
+            .sqrt();
+            let inner_distance = (inner_tile.center_point.x.powi(2)
+                + inner_tile.center_point.y.powi(2)
+                + inner_tile.center_point.z.powi(2))
+            .sqrt();
+
             assert!((outer_distance - 10.0).abs() < 0.1);
             assert!((inner_distance - 9.0).abs() < 0.1);
         }
@@ -230,7 +232,7 @@ impl Tile {
     /// ```rust
     /// let lat_lon = tile.get_lat_lon(10.0);
     /// println!("Tile at {:.2}°N, {:.2}°E", lat_lon.lat, lat_lon.lon);
-    /// 
+    ///
     /// // Check if tile is in northern hemisphere
     /// if lat_lon.lat > 0.0 {
     ///     println!("Northern hemisphere tile");
@@ -303,7 +305,7 @@ impl Tile {
     /// ```rust
     /// // Create tile with 10% border gap
     /// let smaller_boundary = tile.scaled_boundary(0.9);
-    /// 
+    ///
     /// // Create very small tiles for debugging
     /// let tiny_boundary = tile.scaled_boundary(0.2);
     /// ```
@@ -384,7 +386,7 @@ impl Tile {
     /// ```rust
     /// let radius = tile.get_average_radius();
     /// println!("Tile size: {:.3} units", radius);
-    /// 
+    ///
     /// // Compare sizes
     /// if radius > average_size * 1.1 {
     ///     println!("This tile is larger than average");
@@ -395,7 +397,8 @@ impl Tile {
             return 0.0;
         }
 
-        let total_distance: f64 = self.boundary
+        let total_distance: f64 = self
+            .boundary
             .iter()
             .map(|point| self.center_point.distance_to(point))
             .sum();
@@ -433,7 +436,7 @@ impl Tile {
     /// ```rust
     /// let edge_length = tile.get_average_edge_length();
     /// let radius = tile.get_average_radius();
-    /// 
+    ///
     /// // For regular hexagon: edge_length ≈ radius (approximately)
     /// let regularity = (edge_length / radius - 1.0).abs();
     /// if regularity < 0.1 {
@@ -488,7 +491,7 @@ impl Tile {
     /// ```rust
     /// let area = tile.get_area();
     /// println!("Tile covers {:.6} square units", area);
-    /// 
+    ///
     /// // Calculate area density
     /// let sphere_area = 4.0 * std::f64::consts::PI * radius.powi(2);
     /// let coverage = area / sphere_area;
@@ -562,13 +565,14 @@ impl Tile {
 
         // Use the first boundary point to define the "right" direction
         let first_vertex = &self.boundary[0];
-        
+
         // Calculate the "right" vector (center to first vertex)
         let right = Vector3::new(
             first_vertex.x - self.center_point.x,
             first_vertex.y - self.center_point.y,
             first_vertex.z - self.center_point.z,
-        ).normalize();
+        )
+        .normalize();
 
         // Calculate the "up" vector (normal to sphere surface)
         // For a sphere centered at origin, this is just the center point normalized
@@ -576,7 +580,8 @@ impl Tile {
             self.center_point.x,
             self.center_point.y,
             self.center_point.z,
-        ).normalize();
+        )
+        .normalize();
 
         // Calculate the "forward" vector (cross product of right and up)
         let forward = right.cross(&up).normalize();
@@ -664,7 +669,7 @@ impl std::fmt::Display for Tile {
     /// ```rust
     /// let tile_id = tile.to_string();
     /// println!("Processing tile: {}", tile); // Uses this Display implementation
-    /// 
+    ///
     /// // Can be used as a unique identifier
     /// let mut tile_map = HashMap::new();
     /// tile_map.insert(tile.to_string(), tile_data);

@@ -4,7 +4,7 @@ use crate::hexasphere::Hexasphere;
 use std::collections::HashMap;
 
 impl Hexasphere {
-/// Exports the hexasphere as a JSON string.
+    /// Exports the hexasphere as a JSON string.
     ///
     /// Provides a simple JSON representation of the hexasphere structure.
     /// For full JSON serialization with all tile data, consider using serde
@@ -28,7 +28,7 @@ impl Hexasphere {
     /// For production use, consider implementing full serde serialization:
     /// ```rust
     /// use serde::{Deserialize, Serialize};
-    /// 
+    ///
     /// #[derive(Serialize, Deserialize)]
     /// struct Hexasphere { ... }
     /// ```
@@ -38,7 +38,7 @@ impl Hexasphere {
     /// ```rust
     /// let json = hexasphere.to_json();
     /// println!("Hexasphere info: {}", json);
-    /// 
+    ///
     /// // Save to file
     /// std::fs::write("hexasphere.json", json)?;
     /// ```
@@ -68,7 +68,7 @@ impl Hexasphere {
     /// v 1.234 5.678 9.012
     /// v 2.345 6.789 0.123
     /// ...
-    /// 
+    ///
     /// # faces  
     /// f 1 2 3 4 5 6
     /// f 7 8 9 10 11
@@ -104,7 +104,7 @@ impl Hexasphere {
     /// ```rust
     /// let obj_content = hexasphere.to_obj();
     /// std::fs::write("geodesic_sphere.obj", obj_content)?;
-    /// 
+    ///
     /// // Load in Blender: File -> Import -> Wavefront (.obj)
     /// // Load in Unity: Drag file into Assets folder
     /// ```

@@ -1,7 +1,7 @@
 //! 3D thick tile implementation with extrusion capabilities.
 
-use crate::geometry::{Point, Vector3};
 use super::tile::Tile;
+use crate::geometry::{Point, Vector3};
 
 /// A thick 3D tile with both inner and outer surfaces.
 ///
@@ -83,15 +83,20 @@ impl ThickTile {
             surface_tile.center_point.x,
             surface_tile.center_point.y,
             surface_tile.center_point.z,
-        ).normalize();
+        )
+        .normalize();
 
-        let inner_boundary = surface_tile.boundary.iter().map(|point| {
-            Point::new(
-                point.x - normal.x * thickness,
-                point.y - normal.y * thickness,
-                point.z - normal.z * thickness,
-            )
-        }).collect();
+        let inner_boundary = surface_tile
+            .boundary
+            .iter()
+            .map(|point| {
+                Point::new(
+                    point.x - normal.x * thickness,
+                    point.y - normal.y * thickness,
+                    point.z - normal.z * thickness,
+                )
+            })
+            .collect();
 
         Self {
             outer_boundary: surface_tile.boundary.clone(),
@@ -132,7 +137,7 @@ impl ThickTile {
     ///
     /// ```rust
     /// let mesh_data = thick_tile.generate_all_vertices();
-    /// 
+    ///
     /// // Use with a 3D rendering library
     /// for triangle in mesh_data.indices.chunks(3) {
     ///     let v0 = &mesh_data.vertices[triangle[0]];
@@ -153,7 +158,7 @@ impl ThickTile {
         for point in &self.outer_boundary {
             vertices.push(point.clone());
         }
-        let outer_boundary_start = vertices.len();;
+        let outer_boundary_start = vertices.len();
         vertex_count += self.outer_boundary.len();
 
         // Create outer face triangles
@@ -172,7 +177,7 @@ impl ThickTile {
             self.center_point.y - self.get_normal().y * self.thickness,
             self.center_point.z - self.get_normal().z * self.thickness,
         );
-        
+
         vertices.push(inner_center);
         let inner_center_idx = vertex_count;
         vertex_count += 1;
@@ -187,7 +192,7 @@ impl ThickTile {
         for i in 0..self.inner_boundary.len() {
             let next_i = (i + 1) % self.inner_boundary.len();
             indices.extend_from_slice(&[
-                inner_center_idx, // Center
+                inner_center_idx,              // Center
                 inner_boundary_start + next_i, // Reversed order
                 inner_boundary_start + i,
             ]);
@@ -196,7 +201,7 @@ impl ThickTile {
         // Create side faces (quads as two triangles each)
         for i in 0..self.outer_boundary.len() {
             let next_i = (i + 1) % self.outer_boundary.len();
-            
+
             let outer_curr = outer_boundary_start + i;
             let outer_next = outer_boundary_start + next_i;
             let inner_curr = inner_boundary_start + i;
@@ -204,7 +209,7 @@ impl ThickTile {
 
             // First triangle of quad
             indices.extend_from_slice(&[outer_curr, inner_curr, outer_next]);
-            // Second triangle of quad  
+            // Second triangle of quad
             indices.extend_from_slice(&[outer_next, inner_curr, inner_next]);
         }
 
@@ -233,7 +238,8 @@ impl ThickTile {
             self.center_point.x,
             self.center_point.y,
             self.center_point.z,
-        ).normalize()
+        )
+        .normalize()
     }
 
     /// Generates vertices for just the side walls of the thick tile.
@@ -259,7 +265,7 @@ impl ThickTile {
     ///
     /// ```rust
     /// let side_vertices = thick_tile.generate_side_vertices();
-    /// 
+    ///
     /// // Create quads for side walls
     /// for i in 0..thick_tile.outer_boundary.len() {
     ///     let next_i = (i + 1) % thick_tile.outer_boundary.len();
@@ -274,13 +280,13 @@ impl ThickTile {
     /// ```
     pub fn generate_side_vertices(&self) -> Vec<Point> {
         let mut vertices = Vec::new();
-        
+
         // Interleave outer and inner boundary points for easy quad generation
         for i in 0..self.outer_boundary.len() {
             vertices.push(self.outer_boundary[i].clone());
             vertices.push(self.inner_boundary[i].clone());
         }
-        
+
         vertices
     }
 }
@@ -309,7 +315,7 @@ impl ThickTile {
 ///
 /// ```rust
 /// let mesh_data = thick_tile.generate_all_vertices();
-/// 
+///
 /// // Convert to your graphics library's format
 /// let positions: Vec<[f32; 3]> = mesh_data.vertices
 ///     .iter()

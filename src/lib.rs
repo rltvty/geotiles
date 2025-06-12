@@ -35,11 +35,11 @@
 //! let hexasphere = Hexasphere::new(10.0, 3, 0.9);
 //!
 //! println!("Generated {} tiles", hexasphere.tiles.len());
-//! 
+//!
 //! // Analyze hexagon properties for regular hexagon approximation
 //! let stats = hexasphere.calculate_hexagon_stats();
 //! println!("Average hexagon radius: {:.3}", stats.average_hexagon_radius);
-//! println!("Size variation: {:.1}%", 
+//! println!("Size variation: {:.1}%",
 //!     100.0 * (stats.max_hexagon_radius - stats.min_hexagon_radius) / stats.average_hexagon_radius);
 //!
 //! // Get regular hexagon approximations
@@ -51,15 +51,15 @@
 //! std::fs::write("hexasphere.obj", obj_content).unwrap();
 //! ```
 
-pub mod geometry;
-pub mod tile;
-pub mod hexasphere;
 pub mod approximation;
+pub mod geometry;
+pub mod hexasphere;
+pub mod tile;
 pub mod utils;
 
 // Re-export main types for convenience
-pub use hexasphere::{Hexasphere, HexagonStats};
-pub use tile::{Tile, ThickTile};
-pub use geometry::{Point, Vector3, Face};
 pub use approximation::RegularHexagonParams;
-pub use utils::{LatLon};
+pub use geometry::{Face, Point, Vector3};
+pub use hexasphere::{HexagonStats, Hexasphere};
+pub use tile::{ThickTile, Tile};
+pub use utils::LatLon;

@@ -19,12 +19,12 @@ use crate::geometry::Point;
 ///
 /// ```rust
 /// let face = Face::new(0, point1, point2, point3);
-/// 
+///
 /// // Check if two faces share an edge
 /// if face1.is_adjacent_to(&face2) {
 ///     println!("Faces share an edge");
 /// }
-/// 
+///
 /// // Get the centroid for tile boundary calculation
 /// let centroid = face.get_centroid();
 /// ```
@@ -85,10 +85,7 @@ impl Face {
     /// assert_eq!(others.len(), 2); // Always returns exactly 2 points
     /// ```
     pub fn get_other_points(&self, point: &Point) -> Vec<&Point> {
-        self.points
-            .iter()
-            .filter(|p| *p != point)
-            .collect()
+        self.points.iter().filter(|p| *p != point).collect()
     }
 
     /// Finds the third vertex of the face given two known vertices.
@@ -113,9 +110,7 @@ impl Face {
     /// }
     /// ```
     pub fn find_third_point(&self, p1: &Point, p2: &Point) -> Option<&Point> {
-        self.points
-            .iter()
-            .find(|p| *p != p1 && *p != p2)
+        self.points.iter().find(|p| *p != p1 && *p != p2)
     }
 
     /// Determines if this face is adjacent to another face (shares an edge).

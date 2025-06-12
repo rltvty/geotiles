@@ -1,8 +1,8 @@
 //! Regular hexagon generation and parameters.
 
-use std::f64::consts::PI;
 use crate::geometry::Point;
 use crate::tile::TileOrientation;
+use std::f64::consts::PI;
 
 /// Parameters defining a regular hexagon that approximates an irregular tile.
 ///
@@ -53,7 +53,7 @@ impl RegularHexagonParams {
     /// ```rust
     /// let vertices = hex_params.generate_vertices();
     /// assert_eq!(vertices.len(), 6);
-    /// 
+    ///
     /// // All vertices should be equidistant from center
     /// for vertex in &vertices {
     ///     let distance = hex_params.center.distance_to(vertex);
@@ -62,28 +62,28 @@ impl RegularHexagonParams {
     /// ```
     pub fn generate_vertices(&self) -> Vec<Point> {
         let mut vertices = Vec::with_capacity(6);
-        
+
         for i in 0..6 {
             let angle = (i as f64) * PI / 3.0; // 60 degrees per vertex
-            
+
             // Calculate position in local hex coordinates
             let local_x = self.radius * angle.cos();
             let local_y = self.radius * angle.sin();
-            
+
             // Transform to world coordinates using orientation
-            let world_x = self.center.x + 
-                local_x * self.orientation.right.x + 
-                local_y * self.orientation.forward.x;
-            let world_y = self.center.y + 
-                local_x * self.orientation.right.y + 
-                local_y * self.orientation.forward.y;
-            let world_z = self.center.z + 
-                local_x * self.orientation.right.z + 
-                local_y * self.orientation.forward.z;
-            
+            let world_x = self.center.x
+                + local_x * self.orientation.right.x
+                + local_y * self.orientation.forward.x;
+            let world_y = self.center.y
+                + local_x * self.orientation.right.y
+                + local_y * self.orientation.forward.y;
+            let world_z = self.center.z
+                + local_x * self.orientation.right.z
+                + local_y * self.orientation.forward.z;
+
             vertices.push(Point::new(world_x, world_y, world_z));
         }
-        
+
         vertices
     }
 }

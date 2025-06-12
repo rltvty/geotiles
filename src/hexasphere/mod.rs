@@ -1,8 +1,8 @@
 //! Main hexasphere structure and construction algorithms.
 
+pub mod export;
 pub mod hexasphere;
 pub mod statistics;
-pub mod export;
 
 pub use hexasphere::Hexasphere;
 pub use statistics::HexagonStats;

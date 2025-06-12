@@ -1,7 +1,7 @@
 //! 3D point representation and operations.
 
-use std::f64::consts::PI;
 use crate::utils::LatLon;
+use std::f64::consts::PI;
 
 /// A point in 3D space with coordinates (x, y, z).
 ///
@@ -17,13 +17,13 @@ use crate::utils::LatLon;
 ///
 /// let p1 = Point::new(1.0, 2.0, 3.0);
 /// let p2 = Point::new(4.0, 5.0, 6.0);
-/// 
+///
 /// // Calculate distance between points
 /// let distance = p1.distance_to(&p2);
-/// 
+///
 /// // Create intermediate point (50% between p1 and p2)
 /// let midpoint = p1.segment(&p2, 0.5);
-/// 
+///
 /// // Project point onto sphere of radius 10
 /// let mut sphere_point = p1.clone();
 /// sphere_point.project(10.0, 1.0);
@@ -85,7 +85,8 @@ impl Point {
     /// assert_eq!(p1.distance_to(&p2), 5.0); // 3-4-5 triangle
     /// ```
     pub fn distance_to(&self, other: &Point) -> f64 {
-        ((self.x - other.x).powi(2) + (self.y - other.y).powi(2) + (self.z - other.z).powi(2)).sqrt()
+        ((self.x - other.x).powi(2) + (self.y - other.y).powi(2) + (self.z - other.z).powi(2))
+            .sqrt()
     }
 
     /// Creates a series of points by subdividing the line segment between this point and another.
@@ -109,7 +110,7 @@ impl Point {
     /// let p1 = Point::new(0.0, 0.0, 0.0);
     /// let p2 = Point::new(3.0, 0.0, 0.0);
     /// let subdivided = p1.subdivide(&p2, 3);
-    /// 
+    ///
     /// assert_eq!(subdivided.len(), 4); // p1, intermediate1, intermediate2, p2
     /// assert_eq!(subdivided[1].x, 1.0); // First intermediate point
     /// assert_eq!(subdivided[2].x, 2.0); // Second intermediate point
@@ -152,7 +153,7 @@ impl Point {
     /// ```rust
     /// let center = Point::new(0.0, 0.0, 0.0);
     /// let edge = Point::new(10.0, 0.0, 0.0);
-    /// 
+    ///
     /// let boundary = center.segment(&edge, 0.8); // 80% toward edge
     /// assert_eq!(boundary.x, 8.0);
     /// ```
@@ -186,7 +187,7 @@ impl Point {
     /// ```rust
     /// let mut point = Point::new(3.0, 4.0, 0.0);
     /// point.project(10.0, 1.0); // Project onto sphere of radius 10
-    /// 
+    ///
     /// let distance = (point.x.powi(2) + point.y.powi(2) + point.z.powi(2)).sqrt();
     /// assert!((distance - 10.0).abs() < 0.001); // Should be very close to 10.0
     /// ```

@@ -55,7 +55,7 @@ use std::collections::HashMap;
 /// let p3 = Point::new(0.0, 1.0, 0.0);
 /// let normal = calculate_surface_normal(&p1, &p2, &p3);
 /// // normal.z > 0 (points toward +Z)
-/// 
+///
 /// // Clockwise triangle (normal points down)
 /// let normal_cw = calculate_surface_normal(&p1, &p3, &p2);
 /// // normal_cw.z < 0 (points toward -Z)
@@ -125,11 +125,11 @@ pub fn calculate_surface_normal(p1: &Point, p2: &Point, p3: &Point) -> Point {
 /// let center = Point::new(5.0, 5.0, 5.0);  // On sphere surface
 /// let outward = Point::new(1.0, 1.0, 1.0); // Same direction as center
 /// assert_eq!(pointing_away_from_origin(&center, &outward), true);
-/// 
+///
 /// // Vector pointing inward
 /// let inward = Point::new(-1.0, -1.0, -1.0); // Opposite direction
 /// assert_eq!(pointing_away_from_origin(&center, &inward), false);
-/// 
+///
 /// // Mixed directions (fails test)
 /// let mixed = Point::new(1.0, -1.0, 1.0);   // Some components opposite
 /// assert_eq!(pointing_away_from_origin(&center, &mixed), false);
@@ -208,21 +208,21 @@ pub fn pointing_away_from_origin(point: &Point, vector: &Point) -> bool {
 /// use geotiles::Point;
 /// use geotiles::utils::subdivide_face;
 /// use std::collections::HashMap;
-/// 
+///
 /// let mut points = HashMap::new();
 /// let mut face_id = 0;
-/// 
+///
 /// // Create a simple triangle
 /// let face = Face::new(0,
 ///     Point::new(0.0, 0.0, 0.0),
 ///     Point::new(1.0, 0.0, 0.0),
 ///     Point::new(0.5, 1.0, 0.0)
 /// );
-/// 
+///
 /// // Subdivide once (1 → 4 triangles)
 /// let subdivided = subdivide_face(face, 1, &mut points, &mut face_id);
 /// assert_eq!(subdivided.len(), 4);
-/// 
+///
 /// // Subdivide twice (1 → 16 triangles)
 /// let face2 = Face::new(1, /* ... */);
 /// let subdivided2 = subdivide_face(face2, 2, &mut points, &mut face_id);
@@ -338,21 +338,21 @@ pub fn subdivide_face(
 /// use geotiles::Point;
 /// use geotiles::utils::subdivide_edge;
 /// use std::collections::HashMap;
-/// 
+///
 /// let mut points = HashMap::new();
-/// 
+///
 /// let start = Point::new(0.0, 0.0, 0.0);
 /// let end = Point::new(3.0, 0.0, 0.0);
-/// 
+///
 /// // Subdivide into 3 segments (4 points total)
 /// let subdivided = subdivide_edge(&start, &end, 3, &mut points);
-/// 
+///
 /// assert_eq!(subdivided.len(), 4);
 /// assert_eq!(subdivided[0], start);              // 0.0
 /// // subdivided[1] approximately (1.0, 0.0, 0.0)  // 1/3 of the way
 /// // subdivided[2] approximately (2.0, 0.0, 0.0)  // 2/3 of the way  
 /// assert_eq!(subdivided[3], end);                // 3.0
-/// 
+///
 /// // Points are deduplicated in the HashMap
 /// assert_eq!(points.len(), 4); // Only unique points stored
 /// ```
@@ -436,18 +436,18 @@ pub fn subdivide_edge(
 ///
 /// ```rust
 /// let mut points = HashMap::new();
-/// 
+///
 /// let p1 = Point::new(1.0, 2.0, 3.0);
 /// let p2 = Point::new(1.0, 2.0, 3.0); // Same coordinates
-/// 
+///
 /// // First insertion
 /// let stored_p1 = get_or_insert_point(p1, &mut points);
 /// assert_eq!(points.len(), 1);
-/// 
+///
 /// // Second "insertion" returns existing point
 /// let stored_p2 = get_or_insert_point(p2, &mut points);
 /// assert_eq!(points.len(), 1); // Still only 1 unique point
-/// 
+///
 /// // Both return the same canonical point
 /// assert_eq!(stored_p1, stored_p2);
 /// ```
@@ -527,19 +527,19 @@ pub fn get_or_insert_point(point: Point, points: &mut HashMap<Point, Point>) -> 
 ///
 /// ```rust
 /// let mut projected_points = HashMap::new();
-/// 
+///
 /// // Original point (before projection)
 /// let original = Point::new(5.0, 5.0, 5.0);
-/// 
+///
 /// // Its projected version (on unit sphere)
 /// let mut projected = original.clone();
 /// projected.project(1.0, 1.0); // Project to unit sphere
 /// projected_points.insert(projected.clone(), projected.clone());
-/// 
+///
 /// // Find the match
 /// let found = find_projected_point(&original, &projected_points);
 /// assert!(found.is_some());
-/// 
+///
 /// // The found point should be on the sphere surface
 /// let found_point = found.unwrap();
 /// let distance_from_origin = (found_point.x.powi(2) + found_point.y.powi(2) + found_point.z.powi(2)).sqrt();
@@ -647,14 +647,14 @@ pub fn find_projected_point(
 /// ```rust
 /// let mut faces = vec![face1, face2, face3, face4, face5];
 /// let center_point = Point::new(0.0, 0.0, 0.0);
-/// 
+///
 /// // Currently: no-op, faces remain in original order
 /// sort_faces_around_point(&mut faces, &center_point);
-/// 
+///
 /// // Desired: faces would be reordered so adjacent faces share edges
 /// // faces[0] shares edge with faces[1]
 /// // faces[1] shares edge with faces[2]
-/// // ... 
+/// // ...
 /// // faces[4] shares edge with faces[0] (completing the loop)
 /// ```
 ///
@@ -726,19 +726,19 @@ pub fn sort_faces_around_point(faces: &mut [Face], _point: &Point) {
 /// // Right triangle with legs of length 3 and 4
 /// use geotiles::Point;
 /// use geotiles::utils::triangle_area;
-/// 
+///
 /// let p1 = Point::new(0.0, 0.0, 0.0);
 /// let p2 = Point::new(3.0, 0.0, 0.0);
 /// let p3 = Point::new(0.0, 4.0, 0.0);
-/// 
+///
 /// let area = triangle_area(&p1, &p2, &p3);
 /// assert!((area - 6.0).abs() < 0.001); // Area = (1/2) × base × height = (1/2) × 3 × 4 = 6
-/// 
+///
 /// // Degenerate triangle (collinear points)
 /// let p4 = Point::new(6.0, 0.0, 0.0); // On same line as p1 and p2
 /// let degenerate_area = triangle_area(&p1, &p2, &p4);
 /// assert!(degenerate_area < 0.001); // Should be approximately 0
-/// 
+///
 /// // Triangle in 3D space
 /// let p5 = Point::new(1.0, 1.0, 1.0);
 /// let p6 = Point::new(2.0, 1.0, 1.0);

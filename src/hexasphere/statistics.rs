@@ -21,9 +21,9 @@ use crate::tile::Tile;
 ///
 /// ```rust
 /// let stats = hexasphere.calculate_hexagon_stats();
-/// println!("Hexagon size varies by {:.1}% across the sphere", 
+/// println!("Hexagon size varies by {:.1}% across the sphere",
 ///     100.0 * (stats.max_hexagon_radius - stats.min_hexagon_radius) / stats.average_hexagon_radius);
-/// 
+///
 /// if stats.radius_std_deviation / stats.average_hexagon_radius < 0.1 {
 ///     println!("Regular hexagon approximation should work well!");
 /// }
@@ -83,18 +83,18 @@ impl Hexasphere {
     ///
     /// ```rust
     /// let stats = hexasphere.calculate_hexagon_stats();
-    /// 
+    ///
     /// // Check uniformity
     /// let variation_percent = 100.0 * stats.radius_std_deviation / stats.average_hexagon_radius;
     /// println!("Hexagon size varies by {:.1}%", variation_percent);
-    /// 
+    ///
     /// // Assess approximation quality
     /// if variation_percent < 10.0 {
     ///     println!("Regular hexagon approximation should work well!");
     /// } else {
     ///     println!("Consider higher subdivision for better uniformity");
     /// }
-    /// 
+    ///
     /// // Size range analysis
     /// let size_ratio = stats.max_hexagon_radius / stats.min_hexagon_radius;
     /// println!("Largest hexagon is {:.1}x bigger than smallest", size_ratio);
@@ -107,7 +107,11 @@ impl Hexasphere {
     /// - Typical execution time: < 1ms for subdivision levels 0-6
     pub fn calculate_hexagon_stats(&self) -> HexagonStats {
         let hexagons: Vec<&Tile> = self.tiles.iter().filter(|tile| tile.is_hexagon()).collect();
-        let pentagons: Vec<&Tile> = self.tiles.iter().filter(|tile| tile.is_pentagon()).collect();
+        let pentagons: Vec<&Tile> = self
+            .tiles
+            .iter()
+            .filter(|tile| tile.is_pentagon())
+            .collect();
 
         if hexagons.is_empty() {
             return HexagonStats {
@@ -122,8 +126,14 @@ impl Hexasphere {
             };
         }
 
-        let radii: Vec<f64> = hexagons.iter().map(|hex| hex.get_average_radius()).collect();
-        let edge_lengths: Vec<f64> = hexagons.iter().map(|hex| hex.get_average_edge_length()).collect();
+        let radii: Vec<f64> = hexagons
+            .iter()
+            .map(|hex| hex.get_average_radius())
+            .collect();
+        let edge_lengths: Vec<f64> = hexagons
+            .iter()
+            .map(|hex| hex.get_average_edge_length())
+            .collect();
         let areas: Vec<f64> = hexagons.iter().map(|hex| hex.get_area()).collect();
 
         let avg_radius = radii.iter().sum::<f64>() / radii.len() as f64;
@@ -134,9 +144,8 @@ impl Hexasphere {
         let max_radius = radii.iter().copied().fold(f64::NEG_INFINITY, f64::max);
 
         // Calculate standard deviation
-        let variance = radii.iter()
-            .map(|r| (r - avg_radius).powi(2))
-            .sum::<f64>() / radii.len() as f64;
+        let variance =
+            radii.iter().map(|r| (r - avg_radius).powi(2)).sum::<f64>() / radii.len() as f64;
         let std_deviation = variance.sqrt();
 
         HexagonStats {

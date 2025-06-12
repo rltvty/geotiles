@@ -1,6 +1,6 @@
 //! Tile orientation and coordinate system calculations.
 
-use crate::geometry::{Vector3, Point};
+use crate::geometry::{Point, Vector3};
 
 /// Orientation information for a tile, defining its local coordinate system.
 ///
@@ -56,9 +56,15 @@ impl TileOrientation {
     /// ```
     pub fn to_rotation_matrix(&self) -> [f64; 9] {
         [
-            self.right.x, self.up.x, self.forward.x,
-            self.right.y, self.up.y, self.forward.y,
-            self.right.z, self.up.z, self.forward.z,
+            self.right.x,
+            self.up.x,
+            self.forward.x,
+            self.right.y,
+            self.up.y,
+            self.forward.y,
+            self.right.z,
+            self.up.z,
+            self.forward.z,
         ]
     }
 
@@ -89,10 +95,22 @@ impl TileOrientation {
     /// ```
     pub fn to_transform_matrix(&self, translation: &Point) -> [f64; 16] {
         [
-            self.right.x, self.up.x, self.forward.x, translation.x,
-            self.right.y, self.up.y, self.forward.y, translation.y,
-            self.right.z, self.up.z, self.forward.z, translation.z,
-            0.0, 0.0, 0.0, 1.0,
+            self.right.x,
+            self.up.x,
+            self.forward.x,
+            translation.x,
+            self.right.y,
+            self.up.y,
+            self.forward.y,
+            translation.y,
+            self.right.z,
+            self.up.z,
+            self.forward.z,
+            translation.z,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
         ]
     }
 }

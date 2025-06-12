@@ -1,11 +1,10 @@
-
 //! Core hexasphere implementation and construction.
 
-use std::collections::HashMap;
-use crate::geometry::{Point, Face};
-use crate::tile::{Tile, ThickTile, TileOrientation};
 use crate::approximation::RegularHexagonParams;
+use crate::geometry::{Face, Point};
+use crate::tile::{ThickTile, Tile, TileOrientation};
 use crate::utils::{find_projected_point, sort_faces_around_point, subdivide_face};
+use std::collections::HashMap;
 
 /// The main geodesic polyhedron structure containing all tiles.
 ///
@@ -41,13 +40,13 @@ use crate::utils::{find_projected_point, sort_faces_around_point, subdivide_face
 /// ```rust
 /// // Create a detailed hexasphere
 /// let hexasphere = Hexasphere::new(10.0, 4, 0.95);
-/// 
+///
 /// // Analyze the structure
 /// println!("Generated {} tiles", hexasphere.tiles.len());
 /// let stats = hexasphere.calculate_hexagon_stats();
-/// println!("Size variation: {:.1}%", 
+/// println!("Size variation: {:.1}%",
 ///     100.0 * stats.radius_std_deviation / stats.average_hexagon_radius);
-/// 
+///
 /// // Export for visualization
 /// std::fs::write("sphere.obj", hexasphere.to_obj())?;
 /// ```
@@ -121,13 +120,13 @@ impl Hexasphere {
     /// ```rust
     /// // Small sphere for testing
     /// let small = Hexasphere::new(1.0, 2, 1.0);
-    /// 
+    ///
     /// // Medium detail for visualization
     /// let medium = Hexasphere::new(10.0, 4, 0.9);
-    /// 
+    ///
     /// // High detail for scientific applications
     /// let detailed = Hexasphere::new(100.0, 6, 0.95);
-    /// 
+    ///
     /// // Debug version with gaps
     /// let debug = Hexasphere::new(5.0, 3, 0.7);
     /// ```
@@ -163,17 +162,38 @@ impl Hexasphere {
 
         // Create initial icosahedron faces
         let face_indices = vec![
-            [0, 1, 4], [1, 9, 4], [4, 9, 5], [5, 9, 3], [2, 3, 7],
-            [3, 2, 5], [7, 10, 2], [0, 8, 10], [0, 4, 8], [8, 2, 10],
-            [8, 4, 5], [8, 5, 2], [1, 0, 6], [11, 1, 6], [3, 9, 11],
-            [6, 10, 7], [3, 11, 7], [11, 6, 7], [6, 0, 10], [9, 1, 11],
+            [0, 1, 4],
+            [1, 9, 4],
+            [4, 9, 5],
+            [5, 9, 3],
+            [2, 3, 7],
+            [3, 2, 5],
+            [7, 10, 2],
+            [0, 8, 10],
+            [0, 4, 8],
+            [8, 2, 10],
+            [8, 4, 5],
+            [8, 5, 2],
+            [1, 0, 6],
+            [11, 1, 6],
+            [3, 9, 11],
+            [6, 10, 7],
+            [3, 11, 7],
+            [11, 6, 7],
+            [6, 0, 10],
+            [9, 1, 11],
         ];
 
         let mut faces: Vec<Face> = face_indices
             .into_iter()
             .enumerate()
             .map(|(id, [i, j, k])| {
-                Face::new(id, corners[i].clone(), corners[j].clone(), corners[k].clone())
+                Face::new(
+                    id,
+                    corners[i].clone(),
+                    corners[j].clone(),
+                    corners[k].clone(),
+                )
             })
             .collect();
 
@@ -275,9 +295,9 @@ impl Hexasphere {
     ///
     /// ```rust
     /// let approximations = hexasphere.get_regular_hexagon_approximations();
-    /// 
+    ///
     /// for (i, hex_params) in approximations.iter().enumerate() {
-    ///     println!("Hexagon {}: center={}, radius={:.3}", 
+    ///     println!("Hexagon {}: center={}, radius={:.3}",
     ///         i, hex_params.center, hex_params.radius);
     ///     
     ///     // Generate perfect hexagon vertices
@@ -342,12 +362,12 @@ impl Hexasphere {
     /// ```rust
     /// let uniform_radius = hexasphere.get_uniform_hexagon_radius();
     /// println!("Use radius {:.3} for all regular hexagons", uniform_radius);
-    /// 
+    ///
     /// // Check how well this fits
     /// let stats = hexasphere.calculate_hexagon_stats();
     /// let error_range = (stats.max_hexagon_radius - stats.min_hexagon_radius) / uniform_radius;
     /// println!("Size error range: ±{:.1}%", 50.0 * error_range);
-    /// 
+    ///
     /// // Use for rendering
     /// for tile in &hexasphere.tiles {
     ///     if tile.is_hexagon() {
@@ -399,7 +419,7 @@ impl Hexasphere {
     ///
     /// ```rust
     /// let orientations = hexasphere.get_tile_orientations();
-    /// 
+    ///
     /// for (i, orientation_opt) in orientations.iter().enumerate() {
     ///     let tile = &hexasphere.tiles[i];
     ///     
@@ -418,7 +438,7 @@ impl Hexasphere {
     ///         }
     ///     }
     /// }
-    /// 
+    ///
     /// // Count valid orientations
     /// let valid_count = orientations.iter().filter(|opt| opt.is_some()).count();
     /// println!("Valid orientations: {}/{}", valid_count, orientations.len());
@@ -465,15 +485,15 @@ impl Hexasphere {
     /// ```rust
     /// let hex_orientations = hexasphere.get_hexagon_orientations();
     /// let uniform_radius = hexasphere.get_uniform_hexagon_radius();
-    /// 
+    ///
     /// println!("Processing {} hexagonal tiles", hex_orientations.len());
-    /// 
+    ///
     /// for (i, orientation) in hex_orientations.iter().enumerate() {
     ///     // Note: 'i' here is NOT the tile index in hexasphere.tiles
     ///     let transform = orientation.to_transform_matrix(&Point::new(0.0, 0.0, 0.0)); // placeholder center
     ///     spawn_regular_hexagon_mesh(transform, uniform_radius);
     /// }
-    /// 
+    ///
     /// // If you need tile correspondence, use this instead:
     /// for (tile_index, tile) in hexasphere.tiles.iter().enumerate() {
     ///     if tile.is_hexagon() {
@@ -538,21 +558,21 @@ impl Hexasphere {
     /// ```rust
     /// let outer_sphere = Hexasphere::new(10.0, 4, 0.9);
     /// let inner_sphere = outer_sphere.create_inner_sphere(9.0);
-    /// 
+    ///
     /// assert_eq!(outer_sphere.tiles.len(), inner_sphere.tiles.len());
     /// assert_eq!(inner_sphere.radius, 9.0);
-    /// 
+    ///
     /// // Connect corresponding tiles
     /// for (outer_tile, inner_tile) in outer_sphere.tiles.iter().zip(inner_sphere.tiles.iter()) {
     ///     // Create connecting geometry between outer and inner boundaries
     ///     create_connecting_walls(&outer_tile.boundary, &inner_tile.boundary);
     /// }
-    /// 
+    ///
     /// // Verify scaling
     /// let outer_center = &outer_sphere.tiles[0].center_point;
     /// let inner_center = &inner_sphere.tiles[0].center_point;
     /// let expected_scale = 9.0 / 10.0;
-    /// 
+    ///
     /// assert!((inner_center.x - outer_center.x * expected_scale).abs() < 0.001);
     /// ```
     ///
@@ -565,33 +585,37 @@ impl Hexasphere {
     pub fn create_inner_sphere(&self, inner_radius: f64) -> Hexasphere {
         // Create inner sphere with same parameters but different radius
         let ratio = inner_radius / self.radius;
-        
+
         // Scale all points inward while maintaining topology
         let mut inner_sphere = Hexasphere::new(inner_radius, 0, 1.0); // dummy values
-        
+
         // Replace with scaled version of current sphere
         inner_sphere.radius = inner_radius;
-        inner_sphere.tiles = self.tiles.iter().map(|tile| {
-            let scaled_center = Point::new(
-                tile.center_point.x * ratio,
-                tile.center_point.y * ratio,
-                tile.center_point.z * ratio,
-            );
-            
-            let scaled_boundary = tile.boundary.iter().map(|point| Point::new(
-                point.x * ratio,
-                point.y * ratio,
-                point.z * ratio,
-            )).collect();
-            
-            Tile {
-                center_point: scaled_center,
-                boundary: scaled_boundary,
-                neighbor_ids: tile.neighbor_ids.clone(),
-                neighbors: tile.neighbors.clone(),
-            }
-        }).collect();
-        
+        inner_sphere.tiles = self
+            .tiles
+            .iter()
+            .map(|tile| {
+                let scaled_center = Point::new(
+                    tile.center_point.x * ratio,
+                    tile.center_point.y * ratio,
+                    tile.center_point.z * ratio,
+                );
+
+                let scaled_boundary = tile
+                    .boundary
+                    .iter()
+                    .map(|point| Point::new(point.x * ratio, point.y * ratio, point.z * ratio))
+                    .collect();
+
+                Tile {
+                    center_point: scaled_center,
+                    boundary: scaled_boundary,
+                    neighbor_ids: tile.neighbor_ids.clone(),
+                    neighbors: tile.neighbors.clone(),
+                }
+            })
+            .collect();
+
         inner_sphere
     }
 
@@ -642,14 +666,14 @@ impl Hexasphere {
     /// ```rust
     /// let hexasphere = Hexasphere::new(10.0, 4, 0.9);
     /// let thick_tiles = hexasphere.create_thick_tiles(0.5);
-    /// 
+    ///
     /// println!("Created {} thick tiles with 0.5 unit thickness", thick_tiles.len());
-    /// 
+    ///
     /// for (i, thick_tile) in thick_tiles.iter().enumerate() {
     ///     // Generate complete 3D mesh
     ///     let mesh_data = thick_tile.generate_all_vertices();
     ///     
-    ///     println!("Tile {}: {} vertices, {} triangles", 
+    ///     println!("Tile {}: {} vertices, {} triangles",
     ///         i, mesh_data.vertices.len(), mesh_data.indices.len() / 3);
     ///     
     ///     // Verify thickness
@@ -669,8 +693,9 @@ impl Hexasphere {
     /// - **Memory usage**: ~3x original hexasphere size (outer + inner + mesh data)
     /// - **Mesh generation**: Additional O(n×m) for complete vertex/index arrays
     pub fn create_thick_tiles(&self, thickness: f64) -> Vec<ThickTile> {
-        self.tiles.iter().map(|tile| {
-            ThickTile::from_surface_tile(tile, thickness)
-        }).collect()
+        self.tiles
+            .iter()
+            .map(|tile| ThickTile::from_surface_tile(tile, thickness))
+            .collect()
     }
 }
