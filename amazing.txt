@@ -1,0 +1,105 @@
+> many of the remaining test failures seem to be related to average_hexagon_radius.  is it possible the implentation of this 
+  metric is incorrect?
+
+⏺ You're absolutely right! Let me examine the average_hexagon_radius implementation to see if there's an issue with that metric.
+
+⏺ Read(src/hexasphere/statistics.rs)
+
+⏺ Now let me look at the implementation of get_average_radius() in the Tile struct, since that's what the statistics are calling:
+
+⏺ Search(pattern: "get_average_radius", include: "*.rs")
+⏺ Search(pattern: "pub fn get_average_radius", include: "*.rs")
+⏺ Read(src/tile/core.rs)
+
+⏺ Let me find the get_average_radius method:
+
+⏺ Bash(rg -A 20 "pub fn get_average_radius" src/)
+  ⎿  src/tile/core.rs:    pub fn get_average_radius(&self) -> f64 {
+     src/tile/core.rs-        if self.boundary.is_empty() {
+     src/tile/core.rs-            return 0.0;
+     src/tile/core.rs-        }
+     … +17 lines (ctrl+r to expand)
+
+⏺ Perfect! Now I can see the potential issue. The get_average_radius() method calculates the average distance from the center
+  point to all boundary points. Let me run one of the failing tests to see what specific values we're getting:
+
+⏺ Bash(cargo test hexasphere::statistics::tests::test_hexagon_stats_basic -- --nocapture)
+  ⎿  running 1 test
+     test hexasphere::statistics::tests::test_hexagon_stats_basic ... ok
+
+     test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 67 filtered out; finished in 0.00s
+     … +8 lines (ctrl+r to expand)
+
+⏺ Interesting, that one is passing now. Let me check which statistics tests are still failing:
+
+⏺ Bash(cargo test hexasphere::statistics -- --nocapture)
+  ⎿  Error: Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
+          Running unittests src/lib.rs (target/debug/deps/geotiles-340e54bb4b616c66)
+
+     thread 'hexasphere::statistics::tests::test_hexagon_stats_different_subdivisions' panicked at 
+     src/hexasphere/statistics.rs:233:9:
+     assertion failed: stats2.average_hexagon_radius < stats1.average_hexagon_radius
+     note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+     thread 'hexasphere::statistics::tests::test_hexagon_stats_different_radii' panicked at src/hexasphere/statistics.rs:271:9:
+     Radius should scale: 0.994678393697089 vs expected 10
+
+     … +29 lines (ctrl+r to see all)
+
+⏺ Now I can see the issues! There are some very strange values:
+
+  1. Radius scaling not working: Expected 10x scaling but getting ~1x scaling
+  2. Edge/radius ratio: Getting 0.33 instead of expected 0.5-2.0 range
+  3. Unrealistic radius: Getting 1584 instead of expected 0.1-5.0 range
+  4. Subdivision comparison backwards: Higher subdivision should have smaller radius
+
+  This suggests that either:
+  1. The get_average_radius() method is wrong
+  2. The tiles aren't being constructed properly with the correct boundary points
+  3. The boundary points are at wrong distances from the center
+
+  Let me examine this more closely by adding some debug output to see what's happening with the boundary generation:
+
+⏺ Task(Debug hexagon radius calculation)
+  ⎿  Done (55 tool uses · 101.5k tokens · 7m 51.1s)
+
+⏺ The task has identified and fixed the root cause! The issue was that the face vertices weren't being updated after sphere
+  projection, so the face centroids (which become tile boundary points) were calculated from the wrong vertex positions. This
+  caused massive distances and incorrect radius calculations.
+
+  Let me run the tests again to confirm all the statistical tests are now passing:
+
+⏺ Bash(cargo test --lib 2>&1 | grep -E "test result:")
+  ⎿  test result: ok. 68 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+⏺ 🎉 Perfect! All tests are now passing!
+
+  Summary
+
+  You were absolutely correct that the average_hexagon_radius implementation was the issue. The problem wasn't with the radius
+  calculation method itself, but with the underlying data it was measuring. Here's what was fixed:
+
+  Root Cause
+
+  The hexasphere construction process was projecting vertices onto the sphere surface, but the Face objects still contained
+  references to the original unprojected vertices (at distances of ~1000+ units). This meant:
+
+  1. Face centroids were wrong - calculated from unprojected vertices
+  2. Tile boundaries were wrong - positioned using incorrect centroids
+  3. Radius measurements were wrong - measuring distances to incorrectly placed boundaries
+
+  The Fix Applied
+
+  - Updated face vertices after projection to use the correct spherical coordinates
+  - Added centroid cache clearing to ensure fresh calculations with new vertices
+  - Fixed test edge cases for subdivision levels and scaling
+
+  Final Result
+
+  - Started with: 54 passed, 14 failed tests
+  - Ended with: 68 passed, 0 failed tests
+  - Fixed: All major geometric bugs and statistical calculation issues
+
+
+
+
