@@ -171,55 +171,6 @@ impl Tile {
         }
     }
 
-    #[cfg(test)]
-    fn test_thick_tiles() {
-        use crate::Hexasphere;
-
-        let hexasphere = Hexasphere::new(10.0, 2, 0.8);
-        let thick_tiles = hexasphere.create_thick_tiles(0.5);
-
-        assert_eq!(thick_tiles.len(), hexasphere.tiles.len());
-
-        // Test first thick tile
-        if let Some(thick_tile) = thick_tiles.first() {
-            assert_eq!(
-                thick_tile.outer_boundary.len(),
-                thick_tile.inner_boundary.len()
-            );
-            assert!(thick_tile.thickness > 0.0);
-
-            let vertices = thick_tile.generate_all_vertices();
-            assert!(vertices.vertices.len() > 0);
-            assert!(vertices.indices.len() > 0);
-            assert_eq!(vertices.indices.len() % 3, 0); // Should be triangles
-        }
-    }
-
-    #[cfg(test)]
-    fn test_inner_sphere_creation() {
-        use crate::Hexasphere;
-
-        let outer_sphere = Hexasphere::new(10.0, 2, 0.8);
-        let inner_sphere = outer_sphere.create_inner_sphere(9.0);
-
-        assert_eq!(inner_sphere.radius, 9.0);
-        assert_eq!(inner_sphere.tiles.len(), outer_sphere.tiles.len());
-
-        // Check that tiles are properly scaled
-        for (outer_tile, inner_tile) in outer_sphere.tiles.iter().zip(inner_sphere.tiles.iter()) {
-            let outer_distance = (outer_tile.center_point.x.powi(2)
-                + outer_tile.center_point.y.powi(2)
-                + outer_tile.center_point.z.powi(2))
-            .sqrt();
-            let inner_distance = (inner_tile.center_point.x.powi(2)
-                + inner_tile.center_point.y.powi(2)
-                + inner_tile.center_point.z.powi(2))
-            .sqrt();
-
-            assert!((outer_distance - 10.0).abs() < 0.1);
-            assert!((inner_distance - 9.0).abs() < 0.1);
-        }
-    }
 
     /// Converts the tile center to latitude and longitude coordinates.
     ///
@@ -729,5 +680,56 @@ impl std::fmt::Display for Tile {
     /// ```
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.center_point)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Hexasphere;
+
+    #[test]
+    fn test_thick_tiles() {
+        let hexasphere = Hexasphere::new(10.0, 2, 0.8);
+        let thick_tiles = hexasphere.create_thick_tiles(0.5);
+
+        assert_eq!(thick_tiles.len(), hexasphere.tiles.len());
+
+        // Test first thick tile
+        if let Some(thick_tile) = thick_tiles.first() {
+            assert_eq!(
+                thick_tile.outer_boundary.len(),
+                thick_tile.inner_boundary.len()
+            );
+            assert!(thick_tile.thickness > 0.0);
+
+            let vertices = thick_tile.generate_all_vertices();
+            assert!(vertices.vertices.len() > 0);
+            assert!(vertices.indices.len() > 0);
+            assert_eq!(vertices.indices.len() % 3, 0); // Should be triangles
+        }
+    }
+
+    #[test]
+    fn test_inner_sphere_creation() {
+        let outer_sphere = Hexasphere::new(10.0, 2, 0.8);
+        let inner_sphere = outer_sphere.create_inner_sphere(9.0);
+
+        assert_eq!(inner_sphere.radius, 9.0);
+        assert_eq!(inner_sphere.tiles.len(), outer_sphere.tiles.len());
+
+        // Check that tiles are properly scaled
+        for (outer_tile, inner_tile) in outer_sphere.tiles.iter().zip(inner_sphere.tiles.iter()) {
+            let outer_distance = (outer_tile.center_point.x.powi(2)
+                + outer_tile.center_point.y.powi(2)
+                + outer_tile.center_point.z.powi(2))
+            .sqrt();
+            let inner_distance = (inner_tile.center_point.x.powi(2)
+                + inner_tile.center_point.y.powi(2)
+                + inner_tile.center_point.z.powi(2))
+            .sqrt();
+
+            assert!((outer_distance - 10.0).abs() < 0.1);
+            assert!((inner_distance - 9.0).abs() < 0.1);
+        }
     }
 }
