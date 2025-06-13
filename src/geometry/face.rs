@@ -196,4 +196,28 @@ impl Face {
         }
         self.centroid.as_ref().unwrap()
     }
+
+    /// Calculates and returns the centroid (geometric center) of the face without caching.
+    ///
+    /// This is a non-mutating version that calculates the centroid on demand
+    /// without modifying the face. Useful when you only have an immutable reference.
+    ///
+    /// # Returns
+    ///
+    /// The centroid point
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use geotiles::{Face, Point};
+    /// # let face = Face::new(0, Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0), Point::new(0.0, 1.0, 0.0));
+    /// let centroid = face.calculate_centroid();
+    /// // The centroid is equidistant from all three vertices
+    /// ```
+    pub fn calculate_centroid(&self) -> Point {
+        let x = (self.points[0].x + self.points[1].x + self.points[2].x) / 3.0;
+        let y = (self.points[0].y + self.points[1].y + self.points[2].y) / 3.0;
+        let z = (self.points[0].z + self.points[1].z + self.points[2].z) / 3.0;
+        Point::new(x, y, z)
+    }
 }
