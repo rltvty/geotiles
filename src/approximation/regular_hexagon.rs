@@ -56,7 +56,7 @@ impl RegularHexagonParams {
     /// ```rust
     /// # use geotiles::{Hexasphere, RegularHexagonParams};
     /// # let hexasphere = Hexasphere::new(10.0, 2, 0.8);
-    /// # let tile = &hexasphere.tiles[0];
+    /// # let tile = hexasphere.tiles.iter().find(|t| t.is_hexagon()).unwrap();
     /// # let hex_params = tile.get_regular_hexagon_params().unwrap();
     /// let vertices = hex_params.generate_vertices();
     /// assert_eq!(vertices.len(), 6);

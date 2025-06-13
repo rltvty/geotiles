@@ -26,6 +26,8 @@ use crate::geometry::{Point, Vector3};
 /// # Examples
 ///
 /// ```rust
+/// # use geotiles::{Hexasphere, ThickTile};
+/// let hexasphere = Hexasphere::new(1.0, 2, 1.0);
 /// let thick_tiles = hexasphere.create_thick_tiles(0.5);
 /// for thick_tile in thick_tiles {
 ///     let mesh_data = thick_tile.generate_all_vertices();
@@ -73,7 +75,8 @@ impl ThickTile {
     /// # Examples
     ///
     /// ```rust
-    /// use geotiles::ThickTile;
+    /// # use geotiles::{Hexasphere, ThickTile};
+    /// let hexasphere = Hexasphere::new(1.0, 2, 1.0);
     /// let surface_tile = &hexasphere.tiles[0];
     /// let thick_tile = ThickTile::from_surface_tile(surface_tile, 0.2);
     /// assert_eq!(thick_tile.thickness, 0.2);
@@ -137,6 +140,10 @@ impl ThickTile {
     /// # Examples
     ///
     /// ```rust
+    /// # use geotiles::{Hexasphere, ThickTile};
+    /// let hexasphere = Hexasphere::new(1.0, 2, 1.0);
+    /// let surface_tile = &hexasphere.tiles[0];
+    /// let thick_tile = ThickTile::from_surface_tile(surface_tile, 0.2);
     /// let mesh_data = thick_tile.generate_all_vertices();
     ///
     /// // Use with a 3D rendering library
@@ -230,7 +237,17 @@ impl ThickTile {
     /// # Examples
     ///
     /// ```rust
-    /// let normal = thick_tile.get_normal();
+    /// # use geotiles::{Hexasphere, ThickTile, Vector3};
+    /// let hexasphere = Hexasphere::new(1.0, 2, 1.0);
+    /// let surface_tile = &hexasphere.tiles[0];
+    /// let thick_tile = ThickTile::from_surface_tile(surface_tile, 0.2);
+    /// // Note: get_normal() is a private method, so this example shows the concept
+    /// // In practice, you would calculate the normal as:
+    /// let normal = Vector3::new(
+    ///     thick_tile.center_point.x,
+    ///     thick_tile.center_point.y,
+    ///     thick_tile.center_point.z,
+    /// ).normalize();
     /// let magnitude = (normal.x.powi(2) + normal.y.powi(2) + normal.z.powi(2)).sqrt();
     /// assert!((magnitude - 1.0).abs() < 0.001); // Should be unit vector
     /// ```
@@ -265,6 +282,10 @@ impl ThickTile {
     /// # Examples
     ///
     /// ```rust
+    /// # use geotiles::{Hexasphere, ThickTile};
+    /// let hexasphere = Hexasphere::new(1.0, 2, 1.0);
+    /// let surface_tile = &hexasphere.tiles[0];
+    /// let thick_tile = ThickTile::from_surface_tile(surface_tile, 0.2);
     /// let side_vertices = thick_tile.generate_side_vertices();
     ///
     /// // Create quads for side walls
@@ -315,6 +336,10 @@ impl ThickTile {
 /// # Examples
 ///
 /// ```rust
+/// # use geotiles::{Hexasphere, ThickTile};
+/// let hexasphere = Hexasphere::new(1.0, 2, 1.0);
+/// let surface_tile = &hexasphere.tiles[0];
+/// let thick_tile = ThickTile::from_surface_tile(surface_tile, 0.2);
 /// let mesh_data = thick_tile.generate_all_vertices();
 ///
 /// // Convert to your graphics library's format

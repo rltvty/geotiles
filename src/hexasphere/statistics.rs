@@ -20,6 +20,8 @@ use crate::tile::Tile;
 /// # Examples
 ///
 /// ```rust
+/// # use geotiles::Hexasphere;
+/// # let hexasphere = Hexasphere::new(10.0, 2, 0.8);
 /// let stats = hexasphere.calculate_hexagon_stats();
 /// println!("Hexagon size varies by {:.1}% across the sphere",
 ///     100.0 * (stats.max_hexagon_radius - stats.min_hexagon_radius) / stats.average_hexagon_radius);
@@ -82,6 +84,8 @@ impl Hexasphere {
     /// # Examples
     ///
     /// ```rust
+    /// # use geotiles::Hexasphere;
+    /// # let hexasphere = Hexasphere::new(10.0, 2, 0.8);
     /// let stats = hexasphere.calculate_hexagon_stats();
     ///
     /// // Check uniformity

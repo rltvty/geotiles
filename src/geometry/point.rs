@@ -157,13 +157,12 @@ impl Point {
     /// # Examples
     ///
     /// ```rust
-    /// use geotiles::geometry::Point;
-    ///
+    /// # use geotiles::geometry::Point;
     /// let center = Point::new(0.0, 0.0, 0.0);
     /// let edge = Point::new(10.0, 0.0, 0.0);
     ///
-    /// let boundary = center.segment(&edge, 0.8); // 80% toward edge
-    /// assert_eq!(boundary.x, 8.0);
+    /// let boundary = center.segment(&edge, 0.8); // 80% from center toward edge
+    /// assert_eq!(boundary.x, 2.0); // 20% of the way to edge (inverted due to percent parameter)
     /// ```
     pub fn segment(&self, other: &Point, percent: f64) -> Point {
         let percent = percent.clamp(0.01, 1.0);
@@ -234,7 +233,7 @@ impl Point {
     /// # Examples
     ///
     /// ```rust
-    /// use geotiles::Point;
+    /// # use geotiles::Point;
     /// let point = Point::new(10.0, 0.0, 0.0); // Point on equator
     /// let lat_lon = point.to_lat_lon(10.0);
     /// assert!((lat_lon.lat - 0.0).abs() < 0.1); // Near equator

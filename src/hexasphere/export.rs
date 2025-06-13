@@ -26,21 +26,28 @@ impl Hexasphere {
     /// # Future Enhancement
     ///
     /// For production use, consider implementing full serde serialization:
-    /// ```rust
+    /// ```rust,ignore
     /// use serde::{Deserialize, Serialize};
     ///
     /// #[derive(Serialize, Deserialize)]
-    /// struct Hexasphere { ... }
+    /// struct Hexasphere { /* fields */ }
     /// ```
     ///
     /// # Examples
     ///
     /// ```rust
+    /// # use geotiles::Hexasphere;
+    /// # let hexasphere = Hexasphere::new(10.0, 2, 0.8);
     /// let json = hexasphere.to_json();
     /// println!("Hexasphere info: {}", json);
     ///
     /// // Save to file
+    /// # fn save_example() -> std::io::Result<()> {
+    /// # let hexasphere = Hexasphere::new(10.0, 2, 0.8);
+    /// # let json = hexasphere.to_json();
     /// std::fs::write("hexasphere.json", json)?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn to_json(&self) -> String {
         // This would require serde for proper JSON serialization
@@ -102,11 +109,16 @@ impl Hexasphere {
     /// # Examples
     ///
     /// ```rust
+    /// # use geotiles::Hexasphere;
+    /// # fn save_obj_example() -> std::io::Result<()> {
+    /// # let hexasphere = Hexasphere::new(10.0, 2, 0.8);
     /// let obj_content = hexasphere.to_obj();
     /// std::fs::write("geodesic_sphere.obj", obj_content)?;
     ///
     /// // Load in Blender: File -> Import -> Wavefront (.obj)
     /// // Load in Unity: Drag file into Assets folder
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// # Performance Notes

@@ -38,7 +38,7 @@ use std::collections::HashMap;
 /// # Examples
 ///
 /// ```rust
-/// use geotiles::Hexasphere;
+/// # use geotiles::Hexasphere;
 /// // Create a detailed hexasphere
 /// let hexasphere = Hexasphere::new(10.0, 4, 0.95);
 ///
@@ -119,7 +119,7 @@ impl Hexasphere {
     /// # Examples
     ///
     /// ```rust
-    /// use geotiles::Hexasphere;
+    /// # use geotiles::Hexasphere;
     /// // Small sphere for testing
     /// let small = Hexasphere::new(1.0, 2, 1.0);
     ///
@@ -129,7 +129,7 @@ impl Hexasphere {
     /// // High detail for scientific applications
     /// let detailed = Hexasphere::new(100.0, 6, 0.95);
     ///
-    /// // Debug version with gaps
+    /// // Debug version with gaps between tiles
     /// let debug = Hexasphere::new(5.0, 3, 0.7);
     /// ```
     ///
@@ -296,6 +296,8 @@ impl Hexasphere {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::Hexasphere;
+    /// let hexasphere = Hexasphere::new(1.0, 2, 1.0);
     /// let approximations = hexasphere.get_regular_hexagon_approximations();
     ///
     /// for (i, hex_params) in approximations.iter().enumerate() {
@@ -308,7 +310,7 @@ impl Hexasphere {
     ///     
     ///     // Use in 3D engine
     ///     let transform = hex_params.orientation.to_transform_matrix(&hex_params.center);
-    ///     spawn_regular_hexagon_mesh(transform, hex_params.radius);
+    ///     // spawn_regular_hexagon_mesh(transform, hex_params.radius);
     /// }
     /// ```
     ///
@@ -362,6 +364,8 @@ impl Hexasphere {
     /// # Examples
     ///
     /// ```rust
+    /// use geotiles::Hexasphere;
+    /// let hexasphere = Hexasphere::new(1.0, 2, 1.0);
     /// let uniform_radius = hexasphere.get_uniform_hexagon_radius();
     /// println!("Use radius {:.3} for all regular hexagons", uniform_radius);
     ///
@@ -375,7 +379,7 @@ impl Hexasphere {
     ///     if tile.is_hexagon() {
     ///         if let Some(orientation) = tile.get_orientation() {
     ///             let transform = orientation.to_transform_matrix(&tile.center_point);
-    ///             spawn_uniform_hexagon(transform, uniform_radius);
+    ///             // spawn_uniform_hexagon(transform, uniform_radius);
     ///         }
     ///     }
     /// }
@@ -432,9 +436,9 @@ impl Hexasphere {
     ///             let transform = orientation.to_transform_matrix(&tile.center_point);
     ///             
     ///             if tile.is_hexagon() {
-    ///                 spawn_hexagon_mesh(transform);
+    ///                 // spawn_hexagon_mesh(transform);
     ///             } else {
-    ///                 spawn_pentagon_mesh(transform);
+    ///                 // spawn_pentagon_mesh(transform);
     ///             }
     ///         }
     ///         None => {
@@ -498,7 +502,7 @@ impl Hexasphere {
     /// for (i, orientation) in hex_orientations.iter().enumerate() {
     ///     // Note: 'i' here is NOT the tile index in hexasphere.tiles
     ///     let transform = orientation.to_transform_matrix(&Point::new(0.0, 0.0, 0.0)); // placeholder center
-    ///     spawn_regular_hexagon_mesh(transform, uniform_radius);
+    ///     // spawn_regular_hexagon_mesh(transform, uniform_radius);
     /// }
     ///
     /// // If you need tile correspondence, use this instead:
@@ -506,7 +510,7 @@ impl Hexasphere {
     ///     if tile.is_hexagon() {
     ///         if let Some(orientation) = tile.get_orientation() {
     ///             let transform = orientation.to_transform_matrix(&tile.center_point);
-    ///             spawn_hexagon_with_tile_id(transform, uniform_radius, tile_index);
+    ///             // spawn_hexagon_with_tile_id(transform, uniform_radius, tile_index);
     ///         }
     ///     }
     /// }
@@ -573,7 +577,7 @@ impl Hexasphere {
     /// // Connect corresponding tiles
     /// for (outer_tile, inner_tile) in outer_sphere.tiles.iter().zip(inner_sphere.tiles.iter()) {
     ///     // Create connecting geometry between outer and inner boundaries
-    ///     create_connecting_walls(&outer_tile.boundary, &inner_tile.boundary);
+    ///     // create_connecting_walls(&outer_tile.boundary, &inner_tile.boundary);
     /// }
     ///
     /// // Verify scaling
@@ -692,7 +696,7 @@ impl Hexasphere {
     ///     assert!((measured_thickness - 0.5).abs() < 0.01);
     ///     
     ///     // Use in 3D engine
-    ///     create_3d_mesh_from_data(mesh_data);
+    ///     // create_3d_mesh_from_data(mesh_data);
     /// }
     /// ```
     ///

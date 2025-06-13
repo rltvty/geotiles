@@ -37,6 +37,10 @@ use std::collections::HashMap;
 /// # Examples
 ///
 /// ```rust
+/// # use geotiles::{Hexasphere, LatLon};
+/// # let hexasphere = Hexasphere::new(10.0, 2, 0.8);
+/// # let tile = &hexasphere.tiles[0];
+/// # let sphere_radius = 10.0;
 /// // Analyze a tile
 /// if tile.is_hexagon() {
 ///     let lat_lon = tile.get_lat_lon(sphere_radius);
@@ -91,9 +95,17 @@ impl Tile {
     /// # Examples
     ///
     /// ```rust
-    /// use geotiles::{Face, Tile, Vertex3};
-    /// let surrounding_faces: [Face] = []
-    /// let tile = Tile::new(Vertex3::new(0.1,0.2,0.3), &mut surrounding_faces, 0.9);
+    /// # use geotiles::{Face, Point, Tile};
+    /// # let center = Point::new(0.1, 0.2, 0.3);
+    /// # let mut faces = vec![
+    /// #     Face::new(0, center.clone(), Point::new(0.2, 0.3, 0.4), Point::new(0.3, 0.4, 0.5)),
+    /// #     Face::new(1, center.clone(), Point::new(0.3, 0.4, 0.5), Point::new(0.4, 0.5, 0.6)),
+    /// #     Face::new(2, center.clone(), Point::new(0.4, 0.5, 0.6), Point::new(0.5, 0.6, 0.7)),
+    /// #     Face::new(3, center.clone(), Point::new(0.5, 0.6, 0.7), Point::new(0.6, 0.7, 0.8)),
+    /// #     Face::new(4, center.clone(), Point::new(0.6, 0.7, 0.8), Point::new(0.7, 0.8, 0.9)),
+    /// #     Face::new(5, center.clone(), Point::new(0.7, 0.8, 0.9), Point::new(0.2, 0.3, 0.4)),
+    /// # ];
+    /// let tile = Tile::new(center, &mut faces, 0.9);
     /// // Creates a tile that's 90% of full size
     /// ```
     pub fn new(center_point: Point, faces: &mut [Face], hex_size: f64) -> Self {
@@ -231,9 +243,9 @@ impl Tile {
     /// # Examples
     ///
     /// ```rust
-    /// use geotiles::{Face, Tile, Vertex3};
-    /// let surrounding_faces: [Face] = []
-    /// let tile = Tile::new(Vertex3::new(0.1,0.2,0.3), &mut surrounding_faces, 0.9);
+    /// # use geotiles::Hexasphere;
+    /// # let hexasphere = Hexasphere::new(10.0, 2, 0.8);
+    /// # let tile = &hexasphere.tiles[0];
     /// let lat_lon = tile.get_lat_lon(10.0);
     /// println!("Tile at {:.2}°N, {:.2}°E", lat_lon.lat, lat_lon.lon);
     ///
@@ -264,9 +276,9 @@ impl Tile {
     /// # Examples
     ///
     /// ```rust
-    /// use geotiles::{Face, Tile, Vertex3};
-    /// let surrounding_faces: [Face] = []
-    /// let tile = Tile::new(Vertex3::new(0.1,0.2,0.3), &mut surrounding_faces, 0.9);
+    /// # use geotiles::Hexasphere;
+    /// # let hexasphere = Hexasphere::new(10.0, 2, 0.8);
+    /// # let tile = &hexasphere.tiles[0];
     /// // Get coordinates of all boundary points
     /// for i in 0..tile.boundary.len() {
     ///     if let Some(lat_lon) = tile.get_boundary_lat_lon(10.0, i) {
@@ -310,9 +322,9 @@ impl Tile {
     /// # Examples
     ///
     /// ```rust
-    /// use geotiles::{Face, Tile, Vertex3};
-    /// let surrounding_faces: [Face] = []
-    /// let tile = Tile::new(Vertex3::new(0.1,0.2,0.3), &mut surrounding_faces, 1.0);
+    /// # use geotiles::Hexasphere;
+    /// # let hexasphere = Hexasphere::new(10.0, 2, 0.8);
+    /// # let tile = &hexasphere.tiles[0];
     /// // Create tile with 10% border gap
     /// let smaller_boundary = tile.scaled_boundary(0.9);
     ///
@@ -338,9 +350,9 @@ impl Tile {
     /// # Examples
     ///
     /// ```rust
-    /// use geotiles::{Face, Tile, Vertex3};
-    /// let surrounding_faces: [Face] = []
-    /// let tile = Tile::new(Vertex3::new(0.1,0.2,0.3), &mut surrounding_faces, 0.9);
+    /// # use geotiles::Hexasphere;
+    /// # let hexasphere = Hexasphere::new(10.0, 2, 0.8);
+    /// # let tile = &hexasphere.tiles[0];
     /// if tile.is_hexagon() {
     ///     // Apply hexagon-specific processing
     ///     let regular_params = tile.get_regular_hexagon_params();
@@ -368,6 +380,8 @@ impl Tile {
     /// # Examples
     ///
     /// ```rust
+    /// # use geotiles::Hexasphere;
+    /// # let hexasphere = Hexasphere::new(10.0, 2, 0.8);
     /// let pentagon_count = hexasphere.tiles.iter()
     ///     .filter(|tile| tile.is_pentagon())
     ///     .count();
@@ -397,13 +411,14 @@ impl Tile {
     /// # Examples
     ///
     /// ```rust
-    /// use geotiles::{Face, Tile, Vertex3};
-    /// let surrounding_faces: [Face] = []
-    /// let tile = Tile::new(Vertex3::new(0.1,0.2,0.3), &mut surrounding_faces, 0.9);
+    /// # use geotiles::Hexasphere;
+    /// # let hexasphere = Hexasphere::new(10.0, 2, 0.8);
+    /// # let tile = &hexasphere.tiles[0];
     /// let radius = tile.get_average_radius();
     /// println!("Tile size: {:.3} units", radius);
     ///
     /// // Compare sizes
+    /// # let average_size = 1.0;
     /// if radius > average_size * 1.1 {
     ///     println!("This tile is larger than average");
     /// }
@@ -450,9 +465,9 @@ impl Tile {
     /// # Examples
     ///
     /// ```rust
-    /// use geotiles::{Face, Tile, Vertex3};
-    /// let surrounding_faces: [Face] = []
-    /// let tile = Tile::new(Vertex3::new(0.1,0.2,0.3), &mut surrounding_faces, 0.9);
+    /// # use geotiles::Hexasphere;
+    /// # let hexasphere = Hexasphere::new(10.0, 2, 0.8);
+    /// # let tile = &hexasphere.tiles[0];
     /// let edge_length = tile.get_average_edge_length();
     /// let radius = tile.get_average_radius();
     ///
@@ -508,13 +523,14 @@ impl Tile {
     /// # Examples
     ///
     /// ```rust
-    /// use geotiles::{Face, Tile, Vertex3};
-    /// let surrounding_faces: [Face] = []
-    /// let tile = Tile::new(Vertex3::new(0.1,0.2,0.3), &mut surrounding_faces, 0.9);
+    /// # use geotiles::Hexasphere;
+    /// # let hexasphere = Hexasphere::new(10.0, 2, 0.8);
+    /// # let tile = &hexasphere.tiles[0];
     /// let area = tile.get_area();
     /// println!("Tile covers {:.6} square units", area);
     ///
     /// // Calculate area density
+    /// # let radius: f64 = 10.0;
     /// let sphere_area = 4.0 * std::f64::consts::PI * radius.powi(2);
     /// let coverage = area / sphere_area;
     /// println!("This tile covers {:.2}% of sphere", coverage * 100.0);
@@ -573,14 +589,14 @@ impl Tile {
     /// # Examples
     ///
     /// ```rust
-    /// use geotiles::{Face, Tile, Vertex3};
-    /// let surrounding_faces: [Face] = []
-    /// let tile = Tile::new(Vertex3::new(0.1,0.2,0.3), &mut surrounding_faces, 0.9);
+    /// # use geotiles::Hexasphere;
+    /// # let hexasphere = Hexasphere::new(10.0, 2, 0.8);
+    /// # let tile = &hexasphere.tiles[0];
     /// if let Some(orientation) = tile.get_orientation() {
     ///     let transform = orientation.to_transform_matrix(&tile.center_point);
     ///     
     ///     // Use transform matrix in 3D engine
-    ///     spawn_hexagon_mesh(transform);
+    ///     # // spawn_hexagon_mesh(transform);
     /// }
     /// ```
     pub fn get_orientation(&self) -> Option<TileOrientation> {
@@ -650,14 +666,18 @@ impl Tile {
     /// # Examples
     ///
     /// ```rust
-    /// use geotiles::{Face, Tile, Vertex3};
-    /// let surrounding_faces: [Face] = []
-    /// let tile = Tile::new(Vertex3::new(0.1,0.2,0.3), &mut surrounding_faces, 0.9);
+    /// # use geotiles::Hexasphere;
+    /// # let hexasphere = Hexasphere::new(10.0, 2, 0.8);
+    /// # let tile = &hexasphere.tiles[0];
     /// if let Some(hex_params) = tile.get_regular_hexagon_params() {
     ///     let vertices = hex_params.generate_vertices();
     ///     println!("Regular hexagon has {} vertices", vertices.len()); // Always 6
     ///     
     ///     // Check how well it approximates the original
+    ///     # fn calculate_hexagon_area(radius: f64) -> f64 {
+    ///     #     // Area of regular hexagon = (3√3/2) * r²
+    ///     #     1.5 * (3.0_f64).sqrt() * radius * radius
+    ///     # }
     ///     let regular_area = calculate_hexagon_area(hex_params.radius);
     ///     let original_area = tile.get_area();
     ///     let error = (regular_area - original_area).abs() / original_area;
@@ -695,12 +715,16 @@ impl std::fmt::Display for Tile {
     /// # Examples
     ///
     /// ```rust
-    /// use std::collections::HashMap;
+    /// # use geotiles::Hexasphere;
+    /// # let hexasphere = Hexasphere::new(10.0, 2, 0.8);
+    /// # let tile = &hexasphere.tiles[0];
+    /// # use std::collections::HashMap;
     /// let tile_id = tile.to_string();
     /// println!("Processing tile: {}", tile); // Uses this Display implementation
     ///
     /// // Can be used as a unique identifier
     /// let mut tile_map = HashMap::new();
+    /// # let tile_data = 42; // example data
     /// tile_map.insert(tile.to_string(), tile_data);
     /// ```
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

@@ -18,15 +18,15 @@ use crate::geometry::Point;
 /// # Examples
 ///
 /// ```rust
-/// use geotiles::{Face, Point};
+/// # use geotiles::{Face, Point};
 /// let point1 = Point::new(0.0, 0.0, 0.0);
 /// let point2 = Point::new(1.0, 0.0, 0.0);
 /// let point3 = Point::new(0.0, 1.0, 0.0);
 /// let mut face = Face::new(0, point1, point2, point3);
 ///
 /// // Check if two faces share an edge
-/// let face1 = Face::new(0, Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0), Point::new(0.0, 1.0, 0.0));
-/// let face2 = Face::new(1, Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0), Point::new(1.0, 1.0, 0.0));
+/// # let face1 = Face::new(0, Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0), Point::new(0.0, 1.0, 0.0));
+/// # let face2 = Face::new(1, Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0), Point::new(1.0, 1.0, 0.0));
 /// if face1.is_adjacent_to(&face2) {
 ///     println!("Faces share an edge");
 /// }
@@ -55,7 +55,7 @@ impl Face {
     /// # Examples
     ///
     /// ```rust
-    /// use geotiles::{Face, Point};
+    /// # use geotiles::{Face, Point};
     /// let face = Face::new(
     ///     0,
     ///     Point::new(0.0, 0.0, 0.0),

@@ -17,6 +17,9 @@ use crate::geometry::{Point, Vector3};
 /// # Examples
 ///
 /// ```rust
+/// # use geotiles::Hexasphere;
+/// # let hexasphere = Hexasphere::new(10.0, 2, 0.8);
+/// # let tile = &hexasphere.tiles[0];
 /// // Get orientation for a tile
 /// if let Some(orientation) = tile.get_orientation() {
 ///     let rotation_matrix = orientation.to_rotation_matrix();
@@ -51,6 +54,10 @@ impl TileOrientation {
     /// # Examples
     ///
     /// ```rust
+    /// # use geotiles::Hexasphere;
+    /// # let hexasphere = Hexasphere::new(10.0, 2, 0.8);
+    /// # let tile = &hexasphere.tiles[0];
+    /// # let orientation = tile.get_orientation().unwrap();
     /// let matrix = orientation.to_rotation_matrix();
     /// // Use with graphics libraries that expect 3x3 rotation matrices
     /// ```
@@ -90,6 +97,10 @@ impl TileOrientation {
     /// # Examples
     ///
     /// ```rust
+    /// # use geotiles::Hexasphere;
+    /// # let hexasphere = Hexasphere::new(10.0, 2, 0.8);
+    /// # let tile = &hexasphere.tiles[0];
+    /// # let orientation = tile.get_orientation().unwrap();
     /// let transform = orientation.to_transform_matrix(&tile.center_point);
     /// // Use with 3D engines like Bevy, Three.js, etc.
     /// ```
