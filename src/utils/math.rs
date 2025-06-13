@@ -669,24 +669,24 @@ pub fn find_projected_point(
 ///
 /// // Create faces that share this vertex, positioned around it
 /// // Each face has the center point and two other vertices
-/// let face1 = Face::new(0, 
-///     center_point.clone(), 
-///     Point::new(1.0, 0.0, 1.0), 
+/// let face1 = Face::new(0,
+///     center_point.clone(),
+///     Point::new(1.0, 0.0, 1.0),
 ///     Point::new(0.5, 0.5, 1.2)
 /// );
-/// let face2 = Face::new(1, 
-///     center_point.clone(), 
-///     Point::new(0.0, 1.0, 1.0), 
+/// let face2 = Face::new(1,
+///     center_point.clone(),
+///     Point::new(0.0, 1.0, 1.0),
 ///     Point::new(-0.5, 0.5, 1.2)
 /// );
-/// let face3 = Face::new(2, 
-///     center_point.clone(), 
-///     Point::new(-1.0, 0.0, 1.0), 
+/// let face3 = Face::new(2,
+///     center_point.clone(),
+///     Point::new(-1.0, 0.0, 1.0),
 ///     Point::new(-0.5, -0.5, 1.2)
 /// );
-/// let face4 = Face::new(3, 
-///     center_point.clone(), 
-///     Point::new(0.0, -1.0, 1.0), 
+/// let face4 = Face::new(3,
+///     center_point.clone(),
+///     Point::new(0.0, -1.0, 1.0),
 ///     Point::new(0.5, -0.5, 1.2)
 /// );
 ///
@@ -700,12 +700,12 @@ pub fn find_projected_point(
 /// // around the center point. We can verify the sorting worked by checking
 /// // that the face IDs are in a predictable order based on their positions
 /// let sorted_ids: Vec<usize> = faces.iter().map(|f| f.id).collect();
-/// 
+///
 /// // The exact order depends on the reference direction chosen by the algorithm,
 /// // but the faces should be in a consistent angular order. Since face1 is at +X,
 /// // face2 at +Y, face3 at -X, and face4 at -Y, one valid ordering would be
 /// // [0, 1, 2, 3] or a rotation thereof.
-/// 
+///
 /// // Verify that faces are sorted consistently (each face appears exactly once)
 /// assert_eq!(sorted_ids.len(), 4);
 /// assert!(sorted_ids.contains(&0));
@@ -732,14 +732,15 @@ pub fn sort_faces_around_point(faces: &mut [Face], point: &Point) {
             centroid.x - point.x,
             centroid.y - point.y,
             centroid.z - point.z,
-        ).normalize()
+        )
+        .normalize()
     } else {
         return;
     };
 
     // Calculate the "up" direction (normal to the sphere surface at this point)
     let up_direction = Vector3::new(point.x, point.y, point.z).normalize();
-    
+
     // Create a coordinate system for angular sorting
     let right_direction = reference_direction;
     let forward_direction = up_direction.cross(&right_direction).normalize();
@@ -754,13 +755,14 @@ pub fn sort_faces_around_point(faces: &mut [Face], point: &Point) {
                 centroid.x - point.x,
                 centroid.y - point.y,
                 centroid.z - point.z,
-            ).normalize();
+            )
+            .normalize();
 
             // Project direction onto the tangent plane and calculate angle
             let x_component = direction.dot(&right_direction);
             let y_component = direction.dot(&forward_direction);
             let angle = y_component.atan2(x_component);
-            
+
             (index, angle)
         })
         .collect();
@@ -878,33 +880,37 @@ mod tests {
         let center = Point::new(0.0, 0.0, 1.0);
 
         // Create faces in a known angular arrangement
-        let face_east = Face::new(0, 
-            center.clone(), 
-            Point::new(1.0, 0.0, 1.0), 
-            Point::new(0.707, 0.707, 1.0)
+        let face_east = Face::new(
+            0,
+            center.clone(),
+            Point::new(1.0, 0.0, 1.0),
+            Point::new(0.707, 0.707, 1.0),
         );
-        let face_north = Face::new(1, 
-            center.clone(), 
-            Point::new(0.0, 1.0, 1.0), 
-            Point::new(-0.707, 0.707, 1.0)
+        let face_north = Face::new(
+            1,
+            center.clone(),
+            Point::new(0.0, 1.0, 1.0),
+            Point::new(-0.707, 0.707, 1.0),
         );
-        let face_west = Face::new(2, 
-            center.clone(), 
-            Point::new(-1.0, 0.0, 1.0), 
-            Point::new(-0.707, -0.707, 1.0)
+        let face_west = Face::new(
+            2,
+            center.clone(),
+            Point::new(-1.0, 0.0, 1.0),
+            Point::new(-0.707, -0.707, 1.0),
         );
-        let face_south = Face::new(3, 
-            center.clone(), 
-            Point::new(0.0, -1.0, 1.0), 
-            Point::new(0.707, -0.707, 1.0)
+        let face_south = Face::new(
+            3,
+            center.clone(),
+            Point::new(0.0, -1.0, 1.0),
+            Point::new(0.707, -0.707, 1.0),
         );
 
         // Scramble the order
         let mut faces = vec![
-            face_west.clone(), 
-            face_south.clone(), 
-            face_east.clone(), 
-            face_north.clone()
+            face_west.clone(),
+            face_south.clone(),
+            face_east.clone(),
+            face_north.clone(),
         ];
 
         // Sort them
@@ -912,23 +918,25 @@ mod tests {
 
         // Check that they're now in angular order
         let sorted_ids: Vec<usize> = faces.iter().map(|f| f.id).collect();
-        
+
         // The faces should be sorted in a consistent angular order
         // The exact starting point depends on the reference direction,
         // but the sequence should be consistent
         assert_eq!(sorted_ids.len(), 4);
-        
+
         // Find where face 0 (east) ended up
         let east_pos = sorted_ids.iter().position(|&id| id == 0).unwrap();
-        
+
         // Check that the faces follow in order (allowing for rotation)
         let expected_sequence = vec![0, 1, 2, 3]; // east, north, west, south
         for i in 0..4 {
             let expected_id = expected_sequence[i];
             let actual_id = sorted_ids[(east_pos + i) % 4];
-            assert_eq!(actual_id, expected_id, 
-                "Face {} should be at position {} relative to face 0", 
-                expected_id, i);
+            assert_eq!(
+                actual_id, expected_id,
+                "Face {} should be at position {} relative to face 0",
+                expected_id, i
+            );
         }
     }
 
@@ -942,10 +950,11 @@ mod tests {
         assert_eq!(empty_faces.len(), 0);
 
         // Test with single face
-        let face = Face::new(0, 
-            center.clone(), 
-            Point::new(1.0, 0.0, 0.0), 
-            Point::new(0.0, 1.0, 0.0)
+        let face = Face::new(
+            0,
+            center.clone(),
+            Point::new(1.0, 0.0, 0.0),
+            Point::new(0.0, 1.0, 0.0),
         );
         let mut single_face = vec![face.clone()];
         sort_faces_around_point(&mut single_face, &center);
@@ -953,10 +962,11 @@ mod tests {
         assert_eq!(single_face[0].id, 0);
 
         // Test with two faces
-        let face2 = Face::new(1, 
-            center.clone(), 
-            Point::new(0.0, 1.0, 0.0), 
-            Point::new(-1.0, 0.0, 0.0)
+        let face2 = Face::new(
+            1,
+            center.clone(),
+            Point::new(0.0, 1.0, 0.0),
+            Point::new(-1.0, 0.0, 0.0),
         );
         let mut two_faces = vec![face2.clone(), face.clone()];
         sort_faces_around_point(&mut two_faces, &center);

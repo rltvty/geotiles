@@ -220,4 +220,32 @@ impl Face {
         let z = (self.points[0].z + self.points[1].z + self.points[2].z) / 3.0;
         Point::new(x, y, z)
     }
+
+    /// Clears the cached centroid, forcing recalculation on next access.
+    ///
+    /// This method is useful when the face vertices have been modified and
+    /// the cached centroid is no longer valid. Call this after updating
+    /// face points to ensure the centroid reflects the new geometry.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use geotiles::{Face, Point};
+    /// let mut face = Face::new(0, Point::new(0.0, 0.0, 0.0), Point::new(1.0, 0.0, 0.0), Point::new(0.0, 1.0, 0.0));
+    ///
+    /// // First access caches the centroid
+    /// let centroid1 = face.get_centroid();
+    ///
+    /// // Modify the face vertices
+    /// face.points[0] = Point::new(2.0, 0.0, 0.0);
+    ///
+    /// // Clear the cache to force recalculation
+    /// face.clear_centroid_cache();
+    ///
+    /// // Next access will use the new vertices
+    /// let centroid2 = face.get_centroid();
+    /// ```
+    pub fn clear_centroid_cache(&mut self) {
+        self.centroid = None;
+    }
 }

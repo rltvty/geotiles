@@ -178,7 +178,7 @@ mod tests {
     fn test_to_json_basic() {
         let hexasphere = Hexasphere::new(1.0, 1, 1.0);
         let json = hexasphere.to_json();
-        
+
         assert!(json.contains("\"radius\": 1"));
         assert!(json.contains("\"tile_count\":"));
         assert!(json.starts_with('{'));
@@ -189,13 +189,18 @@ mod tests {
     fn test_to_json_different_params() {
         let hexasphere = Hexasphere::new(5.0, 2, 0.8);
         let json = hexasphere.to_json();
-        
+
         assert!(json.contains("\"radius\": 5"));
         assert!(json.contains("\"tile_count\":"));
-        
+
         // Should have more tiles for higher subdivision
-        let tile_count_str = json.split("\"tile_count\": ").nth(1).unwrap()
-            .split('}').next().unwrap();
+        let tile_count_str = json
+            .split("\"tile_count\": ")
+            .nth(1)
+            .unwrap()
+            .split('}')
+            .next()
+            .unwrap();
         let tile_count: usize = tile_count_str.parse().unwrap();
         assert!(tile_count > 10); // Should have a reasonable number of tiles
     }
@@ -204,13 +209,13 @@ mod tests {
     fn test_to_obj_structure() {
         let hexasphere = Hexasphere::new(1.0, 1, 1.0);
         let obj = hexasphere.to_obj();
-        
+
         // Check basic OBJ format
         assert!(obj.contains("# vertices"));
         assert!(obj.contains("# faces"));
         assert!(obj.contains("v "));
         assert!(obj.contains("f "));
-        
+
         // Check that vertices come before faces
         let vertex_pos = obj.find("# vertices").unwrap();
         let face_pos = obj.find("# faces").unwrap();
@@ -221,40 +226,48 @@ mod tests {
     fn test_to_obj_vertex_format() {
         let hexasphere = Hexasphere::new(2.0, 1, 1.0);
         let obj = hexasphere.to_obj();
-        
+
         // Find first vertex line
         let lines: Vec<&str> = obj.lines().collect();
-        let vertex_line = lines.iter()
+        let vertex_line = lines
+            .iter()
             .find(|line| line.starts_with("v "))
             .expect("Should have at least one vertex");
-        
+
         // Should have exactly 4 parts: "v", x, y, z
         let parts: Vec<&str> = vertex_line.split_whitespace().collect();
         assert_eq!(parts.len(), 4);
         assert_eq!(parts[0], "v");
-        
+
         // Should be parseable as floats
-        parts[1].parse::<f64>().expect("x coordinate should be float");
-        parts[2].parse::<f64>().expect("y coordinate should be float");
-        parts[3].parse::<f64>().expect("z coordinate should be float");
+        parts[1]
+            .parse::<f64>()
+            .expect("x coordinate should be float");
+        parts[2]
+            .parse::<f64>()
+            .expect("y coordinate should be float");
+        parts[3]
+            .parse::<f64>()
+            .expect("z coordinate should be float");
     }
 
     #[test]
     fn test_to_obj_face_format() {
         let hexasphere = Hexasphere::new(1.0, 1, 1.0);
         let obj = hexasphere.to_obj();
-        
+
         // Find first face line
         let lines: Vec<&str> = obj.lines().collect();
-        let face_line = lines.iter()
+        let face_line = lines
+            .iter()
             .find(|line| line.starts_with("f "))
             .expect("Should have at least one face");
-        
+
         // Should start with "f" and have multiple indices
         let parts: Vec<&str> = face_line.split_whitespace().collect();
         assert_eq!(parts[0], "f");
         assert!(parts.len() >= 4); // At least 3 vertices for a triangle
-        
+
         // All indices should be positive integers (1-based)
         for i in 1..parts.len() {
             let index: usize = parts[i].parse().expect("Face index should be integer");
@@ -266,20 +279,16 @@ mod tests {
     fn test_to_obj_vertex_deduplication() {
         let hexasphere = Hexasphere::new(1.0, 1, 1.0);
         let obj = hexasphere.to_obj();
-        
+
         // Count vertices and faces
-        let vertex_count = obj.lines()
-            .filter(|line| line.starts_with("v "))
-            .count();
-        let face_count = obj.lines()
-            .filter(|line| line.starts_with("f "))
-            .count();
-        
+        let vertex_count = obj.lines().filter(|line| line.starts_with("v ")).count();
+        let face_count = obj.lines().filter(|line| line.starts_with("f ")).count();
+
         // Should have fewer vertices than total boundary points due to deduplication
         assert!(vertex_count > 0);
         assert!(face_count > 0);
         assert_eq!(face_count, hexasphere.tiles.len());
-        
+
         // Verify vertex count is reasonable (icosahedron level 1 has specific structure)
         assert!(vertex_count < face_count * 6); // Should be deduplicated
     }
@@ -288,11 +297,11 @@ mod tests {
     fn test_to_obj_pentagon_hexagon_mix() {
         let hexasphere = Hexasphere::new(1.0, 2, 1.0);
         let obj = hexasphere.to_obj();
-        
+
         // Count face sizes
         let mut pentagon_count = 0;
         let mut hexagon_count = 0;
-        
+
         for line in obj.lines() {
             if line.starts_with("f ") {
                 let vertex_count = line.split_whitespace().count() - 1; // Subtract "f"
@@ -303,7 +312,7 @@ mod tests {
                 }
             }
         }
-        
+
         // Should have exactly 12 pentagons and rest hexagons
         assert_eq!(pentagon_count, 12);
         assert!(hexagon_count > 0);

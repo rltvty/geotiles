@@ -2,8 +2,8 @@
 
 use crate::approximation::RegularHexagonParams;
 use crate::geometry::{Face, Point};
-use crate::tile::{ThickTile, TileOrientation};
 use crate::tile::core::Tile;
+use crate::tile::{ThickTile, TileOrientation};
 use crate::utils::{find_projected_point, sort_faces_around_point, subdivide_face};
 use std::collections::HashMap;
 
@@ -217,17 +217,27 @@ impl Hexasphere {
             projected_points.insert(projected.clone(), projected);
         }
 
+        // Update faces to use projected vertices
+        for face in &mut new_faces {
+            for i in 0..3 {
+                if let Some(projected_point) =
+                    find_projected_point(&face.points[i], &projected_points)
+                {
+                    face.points[i] = projected_point;
+                }
+            }
+            // Clear cached centroid since points have changed
+            face.clear_centroid_cache();
+        }
+
         // Group faces by their points to create tiles
         let mut point_to_faces: HashMap<Point, Vec<usize>> = HashMap::new();
         for (face_idx, face) in new_faces.iter().enumerate() {
             for point in &face.points {
-                // Find the projected version of this point
-                if let Some(projected_point) = find_projected_point(point, &projected_points) {
-                    point_to_faces
-                        .entry(projected_point.clone())
-                        .or_default()
-                        .push(face_idx);
-                }
+                point_to_faces
+                    .entry(point.clone())
+                    .or_default()
+                    .push(face_idx);
             }
         }
 
