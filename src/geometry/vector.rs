@@ -14,7 +14,7 @@
 /// let cross = v1.cross(&v2); // Should point in Z direction
 /// let normalized = v1.normalize(); // Unit vector in X direction
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Vector3 {
     /// X component of the vector
     pub x: f64,

@@ -731,4 +731,174 @@ mod tests {
             assert!((inner_distance - 9.0).abs() < 0.1);
         }
     }
+
+    #[test]
+    fn test_scaled_boundary() {
+        let hexasphere = Hexasphere::new(1.0, 2, 1.0);
+        let tile = &hexasphere.tiles[0];
+        
+        let half_scale = tile.scaled_boundary(0.5);
+        let full_scale = tile.scaled_boundary(1.0);
+        let zero_scale = tile.scaled_boundary(0.0);
+        
+        assert_eq!(half_scale.len(), full_scale.len());
+        assert_eq!(zero_scale.len(), tile.boundary.len());
+        
+        // Zero scale should collapse all points to center
+        for point in &zero_scale {
+            assert!((point.x - tile.center_point.x).abs() < 0.001);
+            assert!((point.y - tile.center_point.y).abs() < 0.001);
+            assert!((point.z - tile.center_point.z).abs() < 0.001);
+        }
+        
+        // Half scale should be smaller than full scale
+        for (half, full) in half_scale.iter().zip(full_scale.iter()) {
+            let half_dist = tile.center_point.distance_to(half);
+            let full_dist = tile.center_point.distance_to(full);
+            assert!(half_dist <= full_dist);
+        }
+    }
+
+    #[test]
+    fn test_lat_lon_conversion() {
+        let hexasphere = Hexasphere::new(1.0, 2, 1.0);
+        let tile = &hexasphere.tiles[0];
+        
+        let lat_lon = tile.get_lat_lon(1.0);
+        assert!(lat_lon.lat >= -90.0 && lat_lon.lat <= 90.0);
+        assert!(lat_lon.lon >= -180.0 && lat_lon.lon <= 180.0);
+        
+        // Test boundary lat/lon
+        if let Some(boundary_ll) = tile.get_boundary_lat_lon(1.0, 0) {
+            assert!(boundary_ll.lat >= -90.0 && boundary_ll.lat <= 90.0);
+            assert!(boundary_ll.lon >= -180.0 && boundary_ll.lon <= 180.0);
+        }
+        
+        // Test invalid boundary index
+        assert!(tile.get_boundary_lat_lon(1.0, 100).is_none());
+    }
+
+    #[test]
+    fn test_tile_measurements() {
+        let hexasphere = Hexasphere::new(2.0, 2, 1.0);
+        let tile = &hexasphere.tiles[0];
+        
+        let radius = tile.get_average_radius();
+        let edge_length = tile.get_average_edge_length();
+        let area = tile.get_area();
+        
+        assert!(radius > 0.0);
+        assert!(edge_length > 0.0);
+        assert!(area > 0.0);
+        
+        // For reasonable geodesic tiles, these should be related
+        assert!(edge_length > 0.1 * radius, "Edge length should be reasonable vs radius");
+        assert!(edge_length < 5.0 * radius, "Edge length shouldn't be too large vs radius");
+        assert!(area > 0.1 * radius * radius, "Area should be reasonable vs radius squared");
+    }
+
+    #[test]
+    fn test_tile_classification() {
+        let hexasphere = Hexasphere::new(1.0, 2, 1.0);
+        
+        let mut hexagon_count = 0;
+        let mut pentagon_count = 0;
+        
+        for tile in &hexasphere.tiles {
+            if tile.is_hexagon() {
+                hexagon_count += 1;
+                assert_eq!(tile.boundary.len(), 6);
+                assert!(!tile.is_pentagon());
+            } else if tile.is_pentagon() {
+                pentagon_count += 1;
+                assert_eq!(tile.boundary.len(), 5);
+                assert!(!tile.is_hexagon());
+            } else {
+                panic!("Tile should be either hexagon or pentagon");
+            }
+        }
+        
+        // Should have exactly 12 pentagons
+        assert_eq!(pentagon_count, 12);
+        assert!(hexagon_count > 0);
+        assert_eq!(hexagon_count + pentagon_count, hexasphere.tiles.len());
+    }
+
+    #[test]
+    fn test_tile_orientation_and_params() {
+        let hexasphere = Hexasphere::new(1.0, 2, 1.0);
+        
+        // Find a hexagonal tile
+        let hex_tile = hexasphere.tiles.iter()
+            .find(|tile| tile.is_hexagon())
+            .expect("Should have hexagonal tiles");
+        
+        // Test orientation
+        let orientation = hex_tile.get_orientation()
+            .expect("Hexagon should have orientation");
+        
+        // Vectors should be roughly unit length
+        let right_len = (orientation.right.x.powi(2) + 
+                        orientation.right.y.powi(2) + 
+                        orientation.right.z.powi(2)).sqrt();
+        assert!((right_len - 1.0).abs() < 0.1, "Right vector should be unit length");
+        
+        // Test regular hexagon params
+        let params = hex_tile.get_regular_hexagon_params()
+            .expect("Hexagon should have regular params");
+        
+        assert!(params.radius > 0.0);
+        assert_eq!(params.center.x, hex_tile.center_point.x);
+        assert_eq!(params.center.y, hex_tile.center_point.y);
+        assert_eq!(params.center.z, hex_tile.center_point.z);
+        
+        // Test pentagon cannot get regular hexagon params
+        let pentagon_tile = hexasphere.tiles.iter()
+            .find(|tile| tile.is_pentagon())
+            .expect("Should have pentagon tiles");
+        
+        assert!(pentagon_tile.get_regular_hexagon_params().is_none());
+    }
+
+    #[test]
+    fn test_tile_display() {
+        let hexasphere = Hexasphere::new(1.0, 1, 1.0);
+        let tile = &hexasphere.tiles[0];
+        
+        let display_string = tile.to_string();
+        
+        // Should be the same as center point display
+        let center_string = tile.center_point.to_string();
+        assert_eq!(display_string, center_string);
+        
+        // Should contain coordinates
+        assert!(display_string.contains(&tile.center_point.x.to_string()) ||
+                display_string.contains(&format!("{:.3}", tile.center_point.x)));
+    }
+
+    #[test]
+    fn test_tile_edge_cases() {
+        let hexasphere = Hexasphere::new(0.1, 1, 0.01); // Very small with minimal hex size
+        
+        // Should still work
+        assert!(hexasphere.tiles.len() > 0);
+        
+        for tile in &hexasphere.tiles {
+            // Even tiny tiles should have valid measurements
+            let radius = tile.get_average_radius();
+            let edge_length = tile.get_average_edge_length();
+            let area = tile.get_area();
+            
+            assert!(radius >= 0.0);
+            assert!(edge_length >= 0.0);
+            assert!(area >= 0.0);
+            
+            // Boundary should exist and have correct size
+            if tile.is_hexagon() {
+                assert_eq!(tile.boundary.len(), 6);
+            } else {
+                assert_eq!(tile.boundary.len(), 5);
+            }
+        }
+    }
 }

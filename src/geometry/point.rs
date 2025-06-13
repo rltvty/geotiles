@@ -271,3 +271,275 @@ impl std::hash::Hash for Point {
 }
 
 impl Eq for Point {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_point_creation() {
+        let point = Point::new(1.0, 2.0, 3.0);
+        assert_eq!(point.x, 1.0);
+        assert_eq!(point.y, 2.0);
+        assert_eq!(point.z, 3.0);
+    }
+
+    #[test]
+    fn test_point_precision_rounding() {
+        let point = Point::new(1.23456789, 2.34567891, 3.45678912);
+        assert_eq!(point.x, 1.235);
+        assert_eq!(point.y, 2.346);
+        assert_eq!(point.z, 3.457);
+    }
+
+    #[test]
+    fn test_distance_calculation() {
+        let p1 = Point::new(0.0, 0.0, 0.0);
+        let p2 = Point::new(3.0, 4.0, 0.0);
+        
+        let distance = p1.distance_to(&p2);
+        assert!((distance - 5.0).abs() < 0.001); // 3-4-5 triangle
+    }
+
+    #[test]
+    fn test_distance_symmetry() {
+        let p1 = Point::new(1.0, 2.0, 3.0);
+        let p2 = Point::new(4.0, 6.0, 8.0);
+        
+        let dist1 = p1.distance_to(&p2);
+        let dist2 = p2.distance_to(&p1);
+        
+        assert!((dist1 - dist2).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_distance_zero() {
+        let p1 = Point::new(1.0, 2.0, 3.0);
+        let p2 = Point::new(1.0, 2.0, 3.0);
+        
+        let distance = p1.distance_to(&p2);
+        assert!(distance.abs() < 0.001);
+    }
+
+    #[test]
+    fn test_subdivide_line() {
+        let p1 = Point::new(0.0, 0.0, 0.0);
+        let p2 = Point::new(3.0, 0.0, 0.0);
+        
+        let subdivided = p1.subdivide(&p2, 3);
+        assert_eq!(subdivided.len(), 4);
+        
+        // Check endpoints
+        assert_eq!(subdivided[0], p1);
+        assert_eq!(subdivided[3], p2);
+        
+        // Check intermediate points
+        assert!((subdivided[1].x - 1.0).abs() < 0.001);
+        assert!((subdivided[2].x - 2.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_subdivide_edge_cases() {
+        let p1 = Point::new(0.0, 0.0, 0.0);
+        let p2 = Point::new(1.0, 1.0, 1.0);
+        
+        // Single subdivision (just endpoints)
+        let single = p1.subdivide(&p2, 1);
+        assert_eq!(single.len(), 2);
+        assert_eq!(single[0], p1);
+        assert_eq!(single[1], p2);
+        
+        // Zero subdivisions
+        let zero = p1.subdivide(&p2, 0);
+        assert_eq!(zero.len(), 1);
+        assert_eq!(zero[0], p1);
+    }
+
+    #[test]
+    fn test_segment_midpoint() {
+        let p1 = Point::new(0.0, 0.0, 0.0);
+        let p2 = Point::new(2.0, 2.0, 2.0);
+        
+        let midpoint = p1.segment(&p2, 0.5);
+        assert!((midpoint.x - 1.0).abs() < 0.001);
+        assert!((midpoint.y - 1.0).abs() < 0.001);
+        assert!((midpoint.z - 1.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_segment_endpoints() {
+        let p1 = Point::new(1.0, 2.0, 3.0);
+        let p2 = Point::new(4.0, 5.0, 6.0);
+        
+        let start = p1.segment(&p2, 1.0); // Should be p1
+        assert!((start.x - p1.x).abs() < 0.001);
+        assert!((start.y - p1.y).abs() < 0.001);
+        assert!((start.z - p1.z).abs() < 0.001);
+        
+        let end = p1.segment(&p2, 0.0); // Should be p2
+        assert!((end.x - p2.x).abs() < 0.001);
+        assert!((end.y - p2.y).abs() < 0.001);
+        assert!((end.z - p2.z).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_segment_quarter_points() {
+        let p1 = Point::new(0.0, 0.0, 0.0);
+        let p2 = Point::new(4.0, 0.0, 0.0);
+        
+        let quarter = p1.segment(&p2, 0.75); // 75% toward p1 from p2
+        assert!((quarter.x - 1.0).abs() < 0.001);
+        assert!(quarter.y.abs() < 0.001);
+        assert!(quarter.z.abs() < 0.001);
+    }
+
+    #[test]
+    fn test_projection_to_unit_sphere() {
+        let mut point = Point::new(2.0, 0.0, 0.0);
+        point.project(1.0, 1.0);
+        
+        // Should be normalized to unit sphere
+        assert!((point.x - 1.0).abs() < 0.001);
+        assert!(point.y.abs() < 0.001);
+        assert!(point.z.abs() < 0.001);
+        
+        // Check magnitude
+        let mag = (point.x * point.x + point.y * point.y + point.z * point.z).sqrt();
+        assert!((mag - 1.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_projection_to_different_radius() {
+        let mut point = Point::new(1.0, 1.0, 1.0);
+        let _original_mag = (point.x * point.x + point.y * point.y + point.z * point.z).sqrt();
+        
+        point.project(5.0, 1.0);
+        
+        // Should be scaled to radius 5
+        let new_mag = (point.x * point.x + point.y * point.y + point.z * point.z).sqrt();
+        assert!((new_mag - 5.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_projection_with_partial_percent() {
+        let mut point = Point::new(2.0, 0.0, 0.0);
+        point.project(1.0, 0.5);
+        
+        // Should be half the radius
+        let mag = (point.x * point.x + point.y * point.y + point.z * point.z).sqrt();
+        assert!((mag - 0.5).abs() < 0.001);
+        assert!((point.x - 0.5).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_projection_chaining() {
+        let mut point = Point::new(3.0, 4.0, 0.0);
+        point.project(1.0, 1.0).project(10.0, 1.0);
+        
+        // Should chain projections
+        let mag = (point.x * point.x + point.y * point.y + point.z * point.z).sqrt();
+        assert!((mag - 10.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_lat_lon_conversion_poles() {
+        // Test north pole
+        let north_pole = Point::new(0.0, 1.0, 0.0);
+        let lat_lon = north_pole.to_lat_lon(1.0);
+        assert!((lat_lon.lat - 90.0).abs() < 0.1);
+        
+        // Test south pole  
+        let south_pole = Point::new(0.0, -1.0, 0.0);
+        let lat_lon = south_pole.to_lat_lon(1.0);
+        assert!((lat_lon.lat + 90.0).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_lat_lon_conversion_equator() {
+        // Test points on equator
+        let equator_point = Point::new(0.0, 0.0, 1.0);
+        let lat_lon = equator_point.to_lat_lon(1.0);
+        assert!(lat_lon.lat.abs() < 0.1);
+    }
+
+    #[test]
+    fn test_lat_lon_range() {
+        // Test various points to ensure lat/lon are in valid ranges
+        let test_points = vec![
+            Point::new(1.0, 0.0, 0.0),
+            Point::new(0.0, 1.0, 0.0),
+            Point::new(-1.0, 0.0, 0.0),
+            Point::new(0.0, -1.0, 0.0),
+            Point::new(0.577, 0.577, 0.577), // Equal components
+        ];
+        
+        for point in test_points {
+            let lat_lon = point.to_lat_lon(1.0);
+            assert!(lat_lon.lat >= -90.0 && lat_lon.lat <= 90.0, 
+                "Latitude out of range: {}", lat_lon.lat);
+            assert!(lat_lon.lon >= -180.0 && lat_lon.lon <= 180.0,
+                "Longitude out of range: {}", lat_lon.lon);
+        }
+    }
+
+    #[test]
+    fn test_point_display() {
+        let point = Point::new(1.234, -5.678, 9.012);
+        let display_string = point.to_string();
+        
+        // Should contain the coordinates in comma-separated format
+        assert!(display_string.contains("1.234"));
+        assert!(display_string.contains("-5.678"));
+        assert!(display_string.contains("9.012"));
+        assert!(display_string.contains(","));
+    }
+
+    #[test]
+    fn test_point_equality() {
+        let p1 = Point::new(1.0, 2.0, 3.0);
+        let p2 = Point::new(1.0, 2.0, 3.0);
+        let p3 = Point::new(1.1, 2.0, 3.0);
+        
+        assert_eq!(p1, p2);
+        assert_ne!(p1, p3);
+    }
+
+    #[test]
+    fn test_point_hash_consistency() {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+        
+        let p1 = Point::new(1.0, 2.0, 3.0);
+        let p2 = Point::new(1.0, 2.0, 3.0);
+        
+        let mut hasher1 = DefaultHasher::new();
+        let mut hasher2 = DefaultHasher::new();
+        
+        p1.hash(&mut hasher1);
+        p2.hash(&mut hasher2);
+        
+        assert_eq!(hasher1.finish(), hasher2.finish());
+    }
+
+    #[test]
+    fn test_point_clone() {
+        let original = Point::new(1.0, 2.0, 3.0);
+        let cloned = original.clone();
+        
+        assert_eq!(original, cloned);
+        assert_eq!(original.x, cloned.x);
+        assert_eq!(original.y, cloned.y);
+        assert_eq!(original.z, cloned.z);
+    }
+
+    #[test]
+    fn test_point_debug() {
+        let point = Point::new(1.0, 2.0, 3.0);
+        let debug_string = format!("{:?}", point);
+        
+        // Debug output should contain the coordinates
+        assert!(debug_string.contains("1"));
+        assert!(debug_string.contains("2"));
+        assert!(debug_string.contains("3"));
+    }
+}
