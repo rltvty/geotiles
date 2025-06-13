@@ -928,7 +928,7 @@ mod tests {
         let east_pos = sorted_ids.iter().position(|&id| id == 0).unwrap();
 
         // Check that the faces follow in order (allowing for rotation)
-        let expected_sequence = vec![0, 1, 2, 3]; // east, north, west, south
+        let expected_sequence = [0, 1, 2, 3]; // east, north, west, south
         for i in 0..4 {
             let expected_id = expected_sequence[i];
             let actual_id = sorted_ids[(east_pos + i) % 4];

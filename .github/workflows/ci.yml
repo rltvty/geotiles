@@ -19,7 +19,7 @@ jobs:
           - stable
           - beta
           - nightly
-          - 1.70.0  # MSRV (Minimum Supported Rust Version)
+          - 1.87.0  # MSRV (Minimum Supported Rust Version)
     steps:
     - uses: actions/checkout@v4
     

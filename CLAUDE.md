@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## System Requirements
+
+- **Rust Version**: 1.87.0 or higher (MSRV - Minimum Supported Rust Version)
+- **Edition**: 2021
+
 ## Commands
 
 ### Build & Development
@@ -28,6 +33,21 @@ cargo test approximation     # Test regular hexagon approximation
 ```bash
 cargo install cargo-tarpaulin  # Install coverage tool (one time)
 cargo tarpaulin --out Stdout   # Generate test coverage report
+
+# For CI-compatible coverage (requires cargo-llvm-cov):
+cargo install cargo-llvm-cov   # Install LLVM coverage tool (one time)
+cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+```
+
+### CI Quality Checks
+```bash
+cargo fmt --all -- --check        # Check code formatting
+cargo clippy --all-targets --all-features -- -D warnings  # Lint with strict warnings
+RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features  # Check documentation
+cargo audit                       # Security audit (requires cargo-audit)
+cargo check                       # Check compilation
+cargo test --verbose --all-features   # Run all tests
+cargo test --doc --all-features       # Run doc tests
 ```
 
 ## Architecture Overview

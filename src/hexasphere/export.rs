@@ -269,8 +269,8 @@ mod tests {
         assert!(parts.len() >= 4); // At least 3 vertices for a triangle
 
         // All indices should be positive integers (1-based)
-        for i in 1..parts.len() {
-            let index: usize = parts[i].parse().expect("Face index should be integer");
+        for part in parts.iter().skip(1) {
+            let index: usize = part.parse().expect("Face index should be integer");
             assert!(index >= 1); // OBJ uses 1-based indexing
         }
     }

@@ -400,10 +400,10 @@ impl Tile {
     /// # Mathematical Details
     ///
     /// Calculates the distance between each pair of consecutive boundary points:
-    /// - Edge 0: distance(boundary[0], boundary[1])
-    /// - Edge 1: distance(boundary[1], boundary[2])
+    /// - Edge 0: distance(boundary\[0\], boundary\[1\])
+    /// - Edge 1: distance(boundary\[1\], boundary\[2\])
     /// - ...
-    /// - Last edge: distance(boundary[n-1], boundary[0]) (wrapping around)
+    /// - Last edge: distance(boundary\[n-1\], boundary\[0\]) (wrapping around)
     ///
     /// # Use Cases
     ///
@@ -702,8 +702,8 @@ mod tests {
             assert!(thick_tile.thickness > 0.0);
 
             let vertices = thick_tile.generate_all_vertices();
-            assert!(vertices.vertices.len() > 0);
-            assert!(vertices.indices.len() > 0);
+            assert!(!vertices.vertices.is_empty());
+            assert!(!vertices.indices.is_empty());
             assert_eq!(vertices.indices.len() % 3, 0); // Should be triangles
         }
     }
@@ -902,7 +902,7 @@ mod tests {
         let hexasphere = Hexasphere::new(0.1, 1, 0.01); // Very small with minimal hex size
 
         // Should still work
-        assert!(hexasphere.tiles.len() > 0);
+        assert!(!hexasphere.tiles.is_empty());
 
         for tile in &hexasphere.tiles {
             // Even tiny tiles should have valid measurements

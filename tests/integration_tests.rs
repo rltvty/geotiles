@@ -11,7 +11,7 @@ fn test_point_creation() {
 #[test]
 fn test_hexasphere_creation() {
     let hexasphere = Hexasphere::new(10.0, 1, 0.8);
-    assert!(hexasphere.tiles.len() > 0);
+    assert!(!hexasphere.tiles.is_empty());
     assert_eq!(hexasphere.radius, 10.0);
 }
 
@@ -44,7 +44,7 @@ fn test_tile_orientation() {
 
     // Check that we have some valid orientations
     let valid_orientations: Vec<_> = orientations.into_iter().flatten().collect();
-    assert!(valid_orientations.len() > 0);
+    assert!(!valid_orientations.is_empty());
 }
 
 #[test]
@@ -52,7 +52,7 @@ fn test_regular_hexagon_generation() {
     let hexasphere = Hexasphere::new(10.0, 2, 0.8);
     let approximations = hexasphere.get_regular_hexagon_approximations();
 
-    assert!(approximations.len() > 0);
+    assert!(!approximations.is_empty());
 
     // Test vertex generation for first hexagon
     if let Some(first_hex) = approximations.first() {

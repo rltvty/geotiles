@@ -2,7 +2,7 @@
 name = "geotiles"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.70"
+rust-version = "1.87.0"
 authors = ["Your Name <rltvty@gmail.com>"]
 license = "MIT"
 description = "A Rust library for generating geodesic polyhedra with hexagonal and pentagonal tiles"
