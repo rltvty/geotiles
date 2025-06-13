@@ -1,7 +1,6 @@
 //! 3D point representation and operations.
 
 use crate::utils::LatLon;
-use std::f64::consts::PI;
 
 /// A point in 3D space with coordinates (x, y, z).
 ///
@@ -122,6 +121,10 @@ impl Point {
     /// assert_eq!(subdivided[2].x, 2.0); // Second intermediate point
     /// ```
     pub fn subdivide(&self, other: &Point, count: usize) -> Vec<Point> {
+        if count == 0 {
+            return vec![self.clone()];
+        }
+        
         let mut segments = Vec::with_capacity(count + 1);
         segments.push(self.clone());
 
@@ -148,7 +151,7 @@ impl Point {
     ///
     /// * `other` - The endpoint of the line segment
     /// * `percent` - Position along the segment (0.0 = this point, 1.0 = other point)
-    ///   Automatically clamped to range [0.01, 1.0]
+    ///   Automatically clamped to range [0.0, 1.0]
     ///
     /// # Returns
     ///
@@ -162,14 +165,14 @@ impl Point {
     /// let edge = Point::new(10.0, 0.0, 0.0);
     ///
     /// let boundary = center.segment(&edge, 0.8); // 80% from center toward edge
-    /// assert_eq!(boundary.x, 2.0); // 20% of the way to edge (inverted due to percent parameter)
+    /// assert_eq!(boundary.x, 8.0); // 80% of the way from center to edge
     /// ```
     pub fn segment(&self, other: &Point, percent: f64) -> Point {
-        let percent = percent.clamp(0.01, 1.0);
+        let percent = percent.clamp(0.0, 1.0);
         Point::new(
-            other.x * (1.0 - percent) + self.x * percent,
-            other.y * (1.0 - percent) + self.y * percent,
-            other.z * (1.0 - percent) + self.z * percent,
+            self.x * (1.0 - percent) + other.x * percent,
+            self.y * (1.0 - percent) + other.y * percent,
+            self.z * (1.0 - percent) + other.z * percent,
         )
     }
 
@@ -239,12 +242,13 @@ impl Point {
     /// assert!((lat_lon.lat - 0.0).abs() < 0.1); // Near equator
     /// ```
     pub fn to_lat_lon(&self, radius: f64) -> LatLon {
-        let phi = (self.y / radius).acos(); // lat
-        let theta = (self.x.atan2(self.z) + PI + PI / 2.0) % (PI * 2.0) - PI; // lon
+        // For Y-up coordinate system: latitude is angle from XZ plane toward +Y
+        let lat_radians = (self.y / radius).asin(); // Direct latitude calculation
+        let lon_radians = self.x.atan2(self.z); // Longitude in XZ plane
 
         LatLon {
-            lat: 180.0 * phi / PI - 90.0,
-            lon: 180.0 * theta / PI,
+            lat: lat_radians.to_degrees(),
+            lon: lon_radians.to_degrees(),
         }
     }
 }
@@ -371,12 +375,12 @@ mod tests {
         let p1 = Point::new(1.0, 2.0, 3.0);
         let p2 = Point::new(4.0, 5.0, 6.0);
         
-        let start = p1.segment(&p2, 1.0); // Should be p1
+        let start = p1.segment(&p2, 0.0); // Should be p1 
         assert!((start.x - p1.x).abs() < 0.001);
         assert!((start.y - p1.y).abs() < 0.001);
         assert!((start.z - p1.z).abs() < 0.001);
         
-        let end = p1.segment(&p2, 0.0); // Should be p2
+        let end = p1.segment(&p2, 1.0); // Should be p2
         assert!((end.x - p2.x).abs() < 0.001);
         assert!((end.y - p2.y).abs() < 0.001);
         assert!((end.z - p2.z).abs() < 0.001);
@@ -387,7 +391,7 @@ mod tests {
         let p1 = Point::new(0.0, 0.0, 0.0);
         let p2 = Point::new(4.0, 0.0, 0.0);
         
-        let quarter = p1.segment(&p2, 0.75); // 75% toward p1 from p2
+        let quarter = p1.segment(&p2, 0.25); // 25% toward p2 from p1
         assert!((quarter.x - 1.0).abs() < 0.001);
         assert!(quarter.y.abs() < 0.001);
         assert!(quarter.z.abs() < 0.001);

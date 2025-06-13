@@ -129,12 +129,15 @@ impl TileOrientation {
 impl Default for TileOrientation {
     /// Creates a default orientation aligned with coordinate axes.
     ///
-    /// Useful for testing and as a fallback orientation.
+    /// For hexagon generation in the XY-plane:
+    /// - `right` points along +X axis (for hexagon cos component)
+    /// - `forward` points along +Y axis (for hexagon sin component)  
+    /// - `up` points along +Z axis (normal to hexagon plane)
     fn default() -> Self {
         Self {
-            right: Vector3::new(1.0, 0.0, 0.0),
-            up: Vector3::new(0.0, 1.0, 0.0),
-            forward: Vector3::new(0.0, 0.0, 1.0),
+            right: Vector3::new(1.0, 0.0, 0.0),   // +X axis
+            up: Vector3::new(0.0, 0.0, 1.0),      // +Z axis  
+            forward: Vector3::new(0.0, 1.0, 0.0), // +Y axis
         }
     }
 }
@@ -161,10 +164,10 @@ mod tests {
     fn test_default_orientation() {
         let orientation = TileOrientation::default();
         
-        // Should be identity-like
-        assert_eq!(orientation.right, Vector3::new(1.0, 0.0, 0.0));
-        assert_eq!(orientation.up, Vector3::new(0.0, 1.0, 0.0));
-        assert_eq!(orientation.forward, Vector3::new(0.0, 0.0, 1.0));
+        // Should have coordinate axes for hexagon generation
+        assert_eq!(orientation.right, Vector3::new(1.0, 0.0, 0.0));    // +X axis
+        assert_eq!(orientation.up, Vector3::new(0.0, 0.0, 1.0));       // +Z axis
+        assert_eq!(orientation.forward, Vector3::new(0.0, 1.0, 0.0));  // +Y axis
     }
 
     #[test]
@@ -172,11 +175,11 @@ mod tests {
         let orientation = TileOrientation::default();
         let matrix = orientation.to_rotation_matrix();
         
-        // Should be identity matrix
+        // Should reflect the coordinate system: right=+X, up=+Z, forward=+Y
         let expected = [
             1.0, 0.0, 0.0,  // right vector
-            0.0, 1.0, 0.0,  // up vector
-            0.0, 0.0, 1.0,  // forward vector
+            0.0, 0.0, 1.0,  // up vector  
+            0.0, 1.0, 0.0,  // forward vector
         ];
         
         for (i, (&actual, &expected)) in matrix.iter().zip(expected.iter()).enumerate() {
@@ -191,11 +194,11 @@ mod tests {
         let translation = Point::new(2.0, 3.0, 4.0);
         let matrix = orientation.to_transform_matrix(&translation);
         
-        // Should be identity rotation with translation
+        // Should reflect coordinate system with translation
         let expected = [
             1.0, 0.0, 0.0, 2.0,  // right + translation.x
-            0.0, 1.0, 0.0, 3.0,  // up + translation.y  
-            0.0, 0.0, 1.0, 4.0,  // forward + translation.z
+            0.0, 0.0, 1.0, 3.0,  // up + translation.y  
+            0.0, 1.0, 0.0, 4.0,  // forward + translation.z
             0.0, 0.0, 0.0, 1.0,  // homogeneous row
         ];
         
