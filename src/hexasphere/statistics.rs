@@ -1,7 +1,7 @@
 //! Statistical analysis of hexagon properties.
 
-use crate::hexasphere::Hexasphere;
-use crate::tile::Tile;
+use crate::hexasphere::core::Hexasphere;
+use crate::tile::core::Tile;
 
 /// Statistical analysis of hexagon properties across the entire hexasphere.
 ///

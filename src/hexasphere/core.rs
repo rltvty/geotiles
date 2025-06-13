@@ -2,7 +2,8 @@
 
 use crate::approximation::RegularHexagonParams;
 use crate::geometry::{Face, Point};
-use crate::tile::{ThickTile, Tile, TileOrientation};
+use crate::tile::{ThickTile, TileOrientation};
+use crate::tile::core::Tile;
 use crate::utils::{find_projected_point, sort_faces_around_point, subdivide_face};
 use std::collections::HashMap;
 

@@ -1,6 +1,6 @@
 //! 3D thick tile implementation with extrusion capabilities.
 
-use super::tile::Tile;
+use super::core::Tile;
 use crate::geometry::{Point, Vector3};
 
 /// A thick 3D tile with both inner and outer surfaces.

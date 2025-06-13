@@ -171,7 +171,6 @@ impl Tile {
         }
     }
 
-
     /// Converts the tile center to latitude and longitude coordinates.
     ///
     /// This method treats the tile center as a point on a sphere and converts
@@ -685,7 +684,7 @@ impl std::fmt::Display for Tile {
 
 #[cfg(test)]
 mod tests {
-    use crate::Hexasphere;
+    use crate::hexasphere::core::Hexasphere;
 
     #[test]
     fn test_thick_tiles() {

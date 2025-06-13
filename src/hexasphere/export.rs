@@ -1,6 +1,6 @@
 //! Export functionality for hexasphere data.
 
-use crate::hexasphere::Hexasphere;
+use crate::hexasphere::core::Hexasphere;
 use std::collections::HashMap;
 
 impl Hexasphere {
