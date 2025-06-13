@@ -34,6 +34,17 @@ cargo tarpaulin --out Stdout   # Generate test coverage report
 
 Geotiles generates geodesic polyhedra (Goldberg polyhedra) by subdividing an icosahedron and projecting it onto a sphere. The resulting structure has mostly hexagonal tiles with exactly 12 pentagons.
 
+### Design Decision: Geodesic vs Cube-Based Approach
+
+This library implements the **geodesic/icosahedral approach** rather than cube-based hexagonal tiling. This choice provides:
+
+- ✅ **Mathematically accurate** Goldberg polyhedra
+- ✅ **Organic/natural appearance** with distributed irregularity  
+- ✅ **Established approach** with well-understood properties
+- ✅ **Good foundation** for regular hexagon approximation
+
+Alternative cube-based approaches offer more regular hexagons (90%+) but with different distortion patterns concentrated at cube corners. See `ideas/cube-based hexagonal tiling.md` for detailed comparison.
+
 ### Core Algorithm Flow
 1. **Icosahedron Creation**: Start with 12 vertices positioned using golden ratio
 2. **Recursive Subdivision**: Each triangle subdivided into 4^n smaller triangles
