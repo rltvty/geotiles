@@ -72,12 +72,13 @@ impl Hexasphere {
     ///
     /// * `radius` - Radius of the target sphere (determines overall size)
     /// * `num_divisions` - Number of subdivision levels (detail/complexity)
-    ///   - 0: Just the icosahedron (12 tiles)
-    ///   - 1: 42 tiles
-    ///   - 2: 162 tiles  
-    ///   - 3: 642 tiles
-    ///   - 4: 2562 tiles
-    ///   - n: ~10×4^(n-1) tiles (exponential growth)
+    ///   - 0: 12 tiles (icosahedron)
+    ///   - 1: 12 tiles
+    ///   - 2: 42 tiles
+    ///   - 3: 92 tiles  
+    ///   - 4: 162 tiles
+    ///   - 5: 252 tiles
+    ///   - n: 10n² + 2 tiles (quadratic growth)
     /// * `hex_size` - Scale factor for tile boundaries (0.01 to 1.0)
     ///   - 1.0: Tiles touch at boundaries (no gaps)
     ///   - 0.9: Small gaps between tiles (10% shrinkage)
@@ -85,14 +86,16 @@ impl Hexasphere {
     ///
     /// # Performance Considerations
     ///
-    /// Construction time grows exponentially with `num_divisions`:
-    /// - 0-2: Nearly instant (< 1ms)
-    /// - 3-4: Fast (< 100ms)
-    /// - 5-6: Moderate (< 1s)
-    /// - 7+: Slow (seconds to minutes)
+    /// Construction time grows quadratically with `num_divisions`:
+    /// - 0-5: Nearly instant (< 10ms)
+    /// - 6-10: Fast (< 100ms)
+    /// - 11-20: Moderate (< 1s)
+    /// - 21-50: Slower (1-10s)
+    /// - 51+: Slow (10s+)
     ///
-    /// Memory usage also grows exponentially. Consider caching results for
-    /// repeated use with the same parameters.
+    /// Memory usage also grows quadratically (10n² + 2 tiles). Consider caching 
+    /// results for repeated use with the same parameters, or use shape instancing
+    /// for high subdivision levels to reduce memory usage by 10-100x.
     ///
     /// # Mathematical Background
     ///
@@ -722,4 +725,5 @@ impl Hexasphere {
             .map(|tile| ThickTile::from_surface_tile(tile, thickness))
             .collect()
     }
+
 }

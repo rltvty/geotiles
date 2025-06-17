@@ -33,6 +33,9 @@ pub mod statistics;
 pub mod shape_analysis;
 pub mod shape_export;
 pub mod shape_instances;
+pub mod shape_theory;
+pub mod direct_shapes;
+pub mod high_subdivision;
 
 pub use core::Hexasphere;
 pub use statistics::HexagonStats;

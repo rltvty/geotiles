@@ -25,6 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `get_uniform_shape_instances()`: Single uniform shape with all orientations
   - Enables 10x memory reduction and GPU instancing for efficient rendering
 
+### Fixed
+- **Corrected tile count formula**: Fixed documentation from exponential (10×4^(n-1)) to quadratic (10n²+2)
+- **Updated performance guidelines**: Revised subdivision level recommendations based on correct scaling
+- **Added comprehensive tests**: Validates tile count formula and shape instancing accuracy
+
 ### Changed
 
 ### Deprecated
