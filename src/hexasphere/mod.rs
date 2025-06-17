@@ -37,7 +37,7 @@ pub mod shape_theory;
 pub mod direct_shapes;
 pub mod high_subdivision;
 
-pub use core::Hexasphere;
+pub use core::{Hexasphere, SimplificationStats};
 pub use statistics::HexagonStats;
 pub use shape_analysis::{HexagonShape, ShapeAnalyzer};
 pub use shape_export::{InstancedHexasphere, ShapeTemplate, ShapeInstance};
