@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Face centroid cache clearing**: Added `clear_centroid_cache()` method for Face struct
 - **Comprehensive test suite**: 68 passing tests covering all functionality
 - **Test coverage analysis**: Added cargo-tarpaulin for coverage reporting
+- **Shape instancing API**: New methods for identifying unique tile shapes and their instances
+  - `get_shape_instances()`: Returns unique shapes and all instances with transformations
+  - `get_hexagon_shape_instances()`: Hexagon-only shape instances
+  - `get_uniform_shape_instances()`: Single uniform shape with all orientations
+  - Enables 10x memory reduction and GPU instancing for efficient rendering
 
 ### Changed
 

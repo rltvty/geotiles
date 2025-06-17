@@ -49,6 +49,11 @@
 //! // Export for 3D visualization
 //! let obj_content = hexasphere.to_obj();
 //! std::fs::write("hexasphere.obj", obj_content).unwrap();
+//! 
+//! // NEW: Use shape instancing for efficient rendering
+//! let shape_data = hexasphere.get_shape_instances();
+//! println!("Reduced {} tiles to {} unique shapes", 
+//!     shape_data.instances.len(), shape_data.shapes.len());
 //! ```
 
 pub mod approximation;
@@ -60,6 +65,6 @@ pub mod utils;
 // Re-export main types for convenience
 pub use approximation::RegularHexagonParams;
 pub use geometry::{Face, Point, Vector3};
-pub use hexasphere::{HexagonStats, Hexasphere};
-pub use tile::{ThickTile, Tile};
+pub use hexasphere::{HexagonStats, Hexasphere, TileShape, TileInstance, ShapeInstanceData};
+pub use tile::{ThickTile, Tile, TileOrientation};
 pub use utils::LatLon;
