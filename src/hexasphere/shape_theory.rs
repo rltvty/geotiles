@@ -88,10 +88,10 @@ pub struct DistanceClass {
 /// Calculates the theoretical distance classes for a given subdivision level.
 pub fn calculate_distance_classes(subdivision_level: u32) -> Vec<DistanceClass> {
     let mut classes = Vec::new();
-    
+
     // The maximum distance increases with subdivision level
     let max_distance = subdivision_level;
-    
+
     for d in 0..=max_distance {
         let (shape_types, tiles_per_shape) = match d {
             0 => (1, 12), // Pentagons
@@ -110,7 +110,7 @@ pub fn calculate_distance_classes(subdivision_level: u32) -> Vec<DistanceClass> 
                 (base_types, symmetry_factor)
             }
         };
-        
+
         if d <= subdivision_level {
             classes.push(DistanceClass {
                 distance: d,
@@ -119,7 +119,7 @@ pub fn calculate_distance_classes(subdivision_level: u32) -> Vec<DistanceClass> 
             });
         }
     }
-    
+
     classes
 }
 
@@ -130,16 +130,16 @@ pub fn calculate_instancing_benefit(subdivision_level: u32) -> f64 {
     } else {
         10 * 4_usize.pow(subdivision_level as u32 - 1) + 2
     };
-    
+
     let unique_shapes = predict_unique_shapes(subdivision_level);
-    
+
     total_tiles as f64 / unique_shapes as f64
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_shape_prediction_known_values() {
         // Test against empirically observed values
@@ -152,26 +152,26 @@ mod tests {
         assert_eq!(predict_unique_shapes(7), 45);
         assert_eq!(predict_unique_shapes(8), 59);
     }
-    
+
     #[test]
     fn test_instancing_benefit() {
         // Test that benefit increases with subdivision level
         let benefit_4 = calculate_instancing_benefit(4);
         let benefit_5 = calculate_instancing_benefit(5);
         let benefit_6 = calculate_instancing_benefit(6);
-        
+
         assert!(benefit_5 > benefit_4);
         assert!(benefit_6 > benefit_5);
         assert!(benefit_4 > 5.0); // Should be significant even at level 4
     }
-    
+
     #[test]
     fn test_distance_classes() {
         let classes = calculate_distance_classes(4);
-        
+
         // Should have distance classes 0 through 4
         assert_eq!(classes.len(), 5);
-        
+
         // Distance 0 should be pentagons
         assert_eq!(classes[0].distance, 0);
         assert_eq!(classes[0].tiles_per_shape, 12);

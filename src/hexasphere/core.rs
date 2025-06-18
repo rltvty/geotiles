@@ -93,7 +93,7 @@ impl Hexasphere {
     /// - 21-50: Slower (1-10s)
     /// - 51+: Slow (10s+)
     ///
-    /// Memory usage also grows quadratically (10n² + 2 tiles). Consider caching 
+    /// Memory usage also grows quadratically (10n² + 2 tiles). Consider caching
     /// results for repeated use with the same parameters, or use shape instancing
     /// for high subdivision levels to reduce memory usage by 10-100x.
     ///
@@ -756,15 +756,15 @@ impl Hexasphere {
     /// ```rust
     /// # use geotiles::Hexasphere;
     /// let hexasphere = Hexasphere::new(1.0, 20, 0.95);
-    /// 
+    ///
     /// // Ultra performance: reduce to ~25 shapes with 5% tolerance
     /// let (shapes, instances, stats) = hexasphere.get_simplified_shapes(25, 0.05);
-    /// 
-    /// println!("Reduced {} natural shapes to {} simplified shapes", 
+    ///
+    /// println!("Reduced {} natural shapes to {} simplified shapes",
     ///     stats.original_shape_count, shapes.len());
-    /// println!("Geometric error: {:.2}% average, {:.2}% maximum", 
+    /// println!("Geometric error: {:.2}% average, {:.2}% maximum",
     ///     stats.average_error * 100.0, stats.max_error * 100.0);
-    /// 
+    ///
     /// // Perfect for GPU instancing with minimal draw calls
     /// for (i, shape) in shapes.iter().enumerate() {
     ///     let instance_count = instances.iter().filter(|inst| inst.shape_index == i).count();
@@ -772,30 +772,33 @@ impl Hexasphere {
     /// }
     /// ```
     pub fn get_simplified_shapes(
-        &self, 
-        max_shapes: usize, 
-        tolerance: f64
-    ) -> (Vec<crate::hexasphere::shape_instances::TileShape>, 
-          Vec<crate::hexasphere::shape_instances::TileInstance>, 
-          SimplificationStats) {
-        
+        &self,
+        max_shapes: usize,
+        tolerance: f64,
+    ) -> (
+        Vec<crate::hexasphere::shape_instances::TileShape>,
+        Vec<crate::hexasphere::shape_instances::TileInstance>,
+        SimplificationStats,
+    ) {
         // Get natural shape instances first
         let natural_shapes = self.get_shape_instances();
-        
+
         // Count hexagon shapes for comparison
-        let hexagon_shape_count = natural_shapes.shapes
+        let hexagon_shape_count = natural_shapes
+            .shapes
             .iter()
             .filter(|shape| shape.sides == 6)
             .count();
-            
+
         if max_shapes >= hexagon_shape_count {
             // No simplification needed for hexagons
             // Count pentagon instances in the original data
-            let pentagon_instances_count = natural_shapes.instances
+            let pentagon_instances_count = natural_shapes
+                .instances
                 .iter()
                 .filter(|instance| natural_shapes.shapes[instance.shape_index].sides == 5)
                 .count();
-            
+
             let stats = SimplificationStats {
                 original_shape_count: hexagon_shape_count,
                 simplified_shape_count: hexagon_shape_count,
@@ -806,33 +809,35 @@ impl Hexasphere {
             };
             return (natural_shapes.shapes, natural_shapes.instances, stats);
         }
-        
+
         // Separate pentagons and hexagons
-        let (pentagon_shapes, hexagon_shapes): (Vec<_>, Vec<_>) = natural_shapes.shapes
+        let (pentagon_shapes, hexagon_shapes): (Vec<_>, Vec<_>) = natural_shapes
+            .shapes
             .iter()
             .enumerate()
             .partition(|(_, shape)| shape.sides == 5);
-        
+
         let _pentagon_count = pentagon_shapes.len();
-        
+
         // Pentagons are always preserved separately, so we focus only on hexagon clustering
         let target_hexagon_shapes = max_shapes;
-        
+
         // Cluster hexagon shapes by radius similarity
-        let hexagon_clusters = self.cluster_hexagons_by_radius(&hexagon_shapes, target_hexagon_shapes, tolerance);
-        
+        let hexagon_clusters =
+            self.cluster_hexagons_by_radius(&hexagon_shapes, target_hexagon_shapes, tolerance);
+
         // Build simplified shapes and instances
         let mut simplified_shapes = Vec::new();
         let mut simplified_instances = Vec::new();
         let mut total_error = 0.0f64;
         let mut max_error = 0.0f64;
         let mut hexagon_instance_count = 0;
-        
+
         // Add all pentagon shapes first (never simplified)
         for (original_idx, pentagon_shape) in pentagon_shapes {
             simplified_shapes.push(pentagon_shape.clone());
             let shape_index = simplified_shapes.len() - 1;
-            
+
             // Find all instances that used this pentagon shape
             for instance in &natural_shapes.instances {
                 if instance.shape_index == original_idx {
@@ -843,13 +848,13 @@ impl Hexasphere {
                 }
             }
         }
-        
+
         // Add clustered hexagon shapes
         for cluster in hexagon_clusters {
             let representative_shape = &cluster.representative;
             simplified_shapes.push(representative_shape.clone());
             let shape_index = simplified_shapes.len() - 1;
-            
+
             // Add instances for all shapes in this cluster
             for member in &cluster.members {
                 for instance in &natural_shapes.instances {
@@ -857,7 +862,7 @@ impl Hexasphere {
                         let mut new_instance = instance.clone();
                         new_instance.shape_index = shape_index;
                         simplified_instances.push(new_instance);
-                        
+
                         // Track approximation error (hexagons only)
                         let error = member.error;
                         total_error += error;
@@ -867,13 +872,13 @@ impl Hexasphere {
                 }
             }
         }
-        
+
         // Count pentagon instances (should always be 12)
         let pentagon_instances_count = simplified_instances
             .iter()
             .filter(|instance| simplified_shapes[instance.shape_index].sides == 5)
             .count();
-        
+
         // Calculate compression ratio based only on hexagon shapes
         let original_hexagon_count = hexagon_shapes.len();
         let simplified_hexagon_count = simplified_shapes.iter().filter(|s| s.sides == 6).count();
@@ -882,19 +887,23 @@ impl Hexasphere {
         } else {
             1.0
         };
-        
+
         let stats = SimplificationStats {
             original_shape_count: original_hexagon_count,
             simplified_shape_count: simplified_hexagon_count,
             compression_ratio: hexagon_compression_ratio,
-            average_error: if hexagon_instance_count > 0 { total_error / hexagon_instance_count as f64 } else { 0.0 },
+            average_error: if hexagon_instance_count > 0 {
+                total_error / hexagon_instance_count as f64
+            } else {
+                0.0
+            },
             max_error,
             pentagon_shapes_preserved: pentagon_instances_count,
         };
-        
+
         (simplified_shapes, simplified_instances, stats)
     }
-    
+
     /// Helper method to cluster hexagon shapes by radius similarity
     fn cluster_hexagons_by_radius(
         &self,
@@ -905,28 +914,31 @@ impl Hexasphere {
         if hexagon_shapes.is_empty() || target_clusters == 0 {
             return Vec::new();
         }
-        
+
         if target_clusters >= hexagon_shapes.len() {
             // No clustering needed
-            return hexagon_shapes.iter().map(|(idx, shape)| {
-                HexagonCluster {
+            return hexagon_shapes
+                .iter()
+                .map(|(idx, shape)| HexagonCluster {
                     representative: (*shape).clone(),
                     members: vec![ClusterMember {
                         original_index: *idx,
                         error: 0.0,
                     }],
-                }
-            }).collect();
+                })
+                .collect();
         }
-        
+
         // Simple radius-based clustering
         let mut clusters: Vec<HexagonCluster> = Vec::new();
         let mut used = vec![false; hexagon_shapes.len()];
-        
+
         // Start with the first shape as the first cluster
         for i in 0..hexagon_shapes.len() {
-            if used[i] { continue; }
-            
+            if used[i] {
+                continue;
+            }
+
             let (seed_idx, seed_shape) = hexagon_shapes[i];
             let mut cluster = HexagonCluster {
                 representative: seed_shape.clone(),
@@ -936,15 +948,17 @@ impl Hexasphere {
                 }],
             };
             used[i] = true;
-            
+
             // Find all similar shapes within tolerance
             for j in (i + 1)..hexagon_shapes.len() {
-                if used[j] { continue; }
-                
+                if used[j] {
+                    continue;
+                }
+
                 let (candidate_idx, candidate_shape) = hexagon_shapes[j];
                 let radius_diff = (seed_shape.radius - candidate_shape.radius).abs();
                 let relative_error = radius_diff / seed_shape.radius;
-                
+
                 if relative_error <= tolerance {
                     cluster.members.push(ClusterMember {
                         original_index: candidate_idx,
@@ -953,49 +967,50 @@ impl Hexasphere {
                     used[j] = true;
                 }
             }
-            
+
             clusters.push(cluster);
-            
+
             // Stop if we've reached our target
             if clusters.len() >= target_clusters {
                 break;
             }
         }
-        
+
         // If we have remaining unclustered shapes and haven't reached target,
         // assign them to the closest existing clusters
         for i in 0..hexagon_shapes.len() {
-            if used[i] { continue; }
-            
+            if used[i] {
+                continue;
+            }
+
             let (orphan_idx, orphan_shape) = hexagon_shapes[i];
-            
+
             // Find closest cluster
             let mut best_cluster = 0;
             let mut best_error = f64::INFINITY;
-            
+
             for (cluster_idx, cluster) in clusters.iter().enumerate() {
                 let radius_diff = (cluster.representative.radius - orphan_shape.radius).abs();
                 let error = radius_diff / cluster.representative.radius;
-                
+
                 if error < best_error {
                     best_error = error;
                     best_cluster = cluster_idx;
                 }
             }
-            
+
             clusters[best_cluster].members.push(ClusterMember {
                 original_index: orphan_idx,
                 error: best_error,
             });
         }
-        
+
         clusters
     }
-
 }
 
 /// Statistics about hexagon shape simplification quality and performance
-/// 
+///
 /// Note: Pentagon shapes are always preserved separately and not included in these metrics.
 /// All compression ratios and error measurements apply only to hexagon shapes.
 #[derive(Debug, Clone)]

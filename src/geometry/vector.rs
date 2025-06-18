@@ -126,7 +126,7 @@ impl Vector3 {
     pub fn dot(&self, other: &Self) -> f64 {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
-    
+
     /// Calculates the magnitude (length) of the vector.
     ///
     /// # Returns
@@ -135,7 +135,7 @@ impl Vector3 {
     pub fn magnitude(&self) -> f64 {
         (self.x.powi(2) + self.y.powi(2) + self.z.powi(2)).sqrt()
     }
-    
+
     /// Calculates the angle between this vector and another vector in radians.
     ///
     /// # Arguments
@@ -160,7 +160,7 @@ use std::ops::Sub;
 
 impl Sub for Vector3 {
     type Output = Self;
-    
+
     fn sub(self, rhs: Self) -> Self::Output {
         Self::new(self.x - rhs.x, self.y - rhs.y, self.z - rhs.z)
     }
@@ -168,7 +168,7 @@ impl Sub for Vector3 {
 
 impl Sub for &Vector3 {
     type Output = Vector3;
-    
+
     fn sub(self, rhs: Self) -> Self::Output {
         Vector3::new(self.x - rhs.x, self.y - rhs.y, self.z - rhs.z)
     }

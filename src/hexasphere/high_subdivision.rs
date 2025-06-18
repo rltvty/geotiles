@@ -4,7 +4,7 @@
 //! at subdivision levels that would be computationally infeasible with traditional approaches.
 
 use crate::geometry::Point;
-use crate::hexasphere::shape_instances::{TileShape, TileInstance, ShapeInstanceData};
+use crate::hexasphere::shape_instances::{ShapeInstanceData, TileInstance, TileShape};
 use crate::tile::TileOrientation;
 use std::f64::consts::PI;
 
@@ -37,38 +37,41 @@ impl Default for HighSubdivisionConfig {
 /// This function uses mathematical patterns to directly generate unique shapes
 /// without creating the full mesh, enabling subdivision levels that would
 /// otherwise require petabytes of memory.
-pub fn generate_high_subdivision_shapes(config: &HighSubdivisionConfig) -> Result<ShapeInstanceData, String> {
+pub fn generate_high_subdivision_shapes(
+    config: &HighSubdivisionConfig,
+) -> Result<ShapeInstanceData, String> {
     // Validate configuration
     if config.subdivision_level < 20 {
         return Err("Use standard generation for levels below 20".to_string());
     }
-    
+
     // Estimate memory requirements
     let estimated_shapes = estimate_shape_count(config.subdivision_level);
-    let estimated_instances = estimate_instance_count(config.subdivision_level, config.generate_instances)?;
-    
+    let estimated_instances =
+        estimate_instance_count(config.subdivision_level, config.generate_instances)?;
+
     let shape_memory = estimated_shapes * 72; // ~72 bytes per shape
     let instance_memory = estimated_instances * 32; // ~32 bytes per instance
     let total_memory = shape_memory + instance_memory;
-    
+
     if total_memory > config.max_memory_bytes {
         return Err(format!(
-            "Estimated memory {} MB exceeds limit {} MB", 
-            total_memory / 1_048_576, 
+            "Estimated memory {} MB exceeds limit {} MB",
+            total_memory / 1_048_576,
             config.max_memory_bytes / 1_048_576
         ));
     }
-    
+
     // Generate shapes using mathematical patterns
     let shapes = generate_shape_templates(config.subdivision_level, config.radius);
-    
+
     // Generate instances if requested
     let instances = if config.generate_instances {
         generate_instance_positions(config.subdivision_level, &shapes)?
     } else {
         Vec::new() // Empty for shape-only generation
     };
-    
+
     Ok(ShapeInstanceData { shapes, instances })
 }
 
@@ -76,33 +79,33 @@ pub fn generate_high_subdivision_shapes(config: &HighSubdivisionConfig) -> Resul
 fn estimate_shape_count(level: u32) -> usize {
     // Based on empirical formula with extrapolation
     // The pattern shows growth rate increases approximately every 3-5 levels
-    
+
     let base_patterns = [
-        (1..=4, 5),      // 5 shapes per level
-        (5..=7, 10),     // 10 shapes per level
-        (8..=10, 16),    // 16 shapes per level
-        (11..=15, 20),   // 20 shapes per level
-        (16..=20, 25),   // 25 shapes per level
-        (21..=30, 30),   // 30 shapes per level
-        (31..=50, 40),   // 40 shapes per level
-        (51..=70, 50),   // 50 shapes per level
-        (71..=90, 60),   // 60 shapes per level
+        (1..=4, 5),          // 5 shapes per level
+        (5..=7, 10),         // 10 shapes per level
+        (8..=10, 16),        // 16 shapes per level
+        (11..=15, 20),       // 20 shapes per level
+        (16..=20, 25),       // 25 shapes per level
+        (21..=30, 30),       // 30 shapes per level
+        (31..=50, 40),       // 40 shapes per level
+        (51..=70, 50),       // 50 shapes per level
+        (71..=90, 60),       // 60 shapes per level
         (91..=u32::MAX, 70), // 70 shapes per level
     ];
-    
+
     let mut total = 1; // Start with 1 for pentagon
-    
+
     for (range, growth_rate) in base_patterns {
         if level >= *range.start() {
             let levels_in_range = (*range.end().min(&level) - *range.start() + 1) as usize;
             total += levels_in_range * growth_rate;
-            
+
             if level <= *range.end() {
                 break;
             }
         }
     }
-    
+
     total
 }
 
@@ -111,17 +114,16 @@ fn estimate_instance_count(level: u32, full_instances: bool) -> Result<usize, St
     if !full_instances {
         return Ok(0);
     }
-    
+
     // For very high levels, tile count = 10 * 4^(n-1) + 2
     // This grows exponentially and quickly exceeds memory limits
-    
+
     if level > 30 {
         // For levels above 30, we can't store all instances
         // Return error suggesting alternative approaches
         Err(format!(
             "Level {} would require {} tiles - use hierarchical or streaming approach",
-            level, 
-            "10 * 4^(n-1)"
+            level, "10 * 4^(n-1)"
         ))
     } else {
         // Safe to calculate for levels 20-30
@@ -133,22 +135,22 @@ fn estimate_instance_count(level: u32, full_instances: bool) -> Result<usize, St
 /// Generates shape templates using mathematical formulas.
 fn generate_shape_templates(level: u32, radius: f64) -> Vec<TileShape> {
     let mut shapes = Vec::new();
-    
+
     // Always start with pentagon
     shapes.push(generate_pentagon_shape(radius, level));
-    
+
     // Generate hexagon shapes based on distance rings
     let max_distance = (level as f64).sqrt() as u32;
-    
+
     for distance in 1..=max_distance {
         let variations = calculate_shape_variations(distance, level);
-        
+
         for var in 0..variations {
             let shape = generate_hexagon_shape(radius, level, distance, var);
             shapes.push(shape);
         }
     }
-    
+
     // Ensure we have the expected count
     let expected = estimate_shape_count(level);
     while shapes.len() < expected {
@@ -157,7 +159,7 @@ fn generate_shape_templates(level: u32, radius: f64) -> Vec<TileShape> {
         let shape = generate_interpolated_shape(&shapes[1 + idx % (shapes.len() - 1)], idx);
         shapes.push(shape);
     }
-    
+
     shapes.truncate(expected);
     shapes
 }
@@ -167,18 +169,14 @@ fn generate_pentagon_shape(radius: f64, level: u32) -> TileShape {
     // Pentagon size decreases with subdivision level
     let scale = radius / (1.0 + 0.1 * (level as f64).ln());
     let angle_step = 2.0 * PI / 5.0;
-    
+
     let vertices: Vec<Point> = (0..5)
         .map(|i| {
             let angle = i as f64 * angle_step;
-            Point::new(
-                scale * angle.cos(),
-                0.0,
-                scale * angle.sin()
-            )
+            Point::new(scale * angle.cos(), 0.0, scale * angle.sin())
         })
         .collect();
-    
+
     TileShape {
         vertices,
         sides: 5,
@@ -191,8 +189,20 @@ fn calculate_shape_variations(distance: u32, level: u32) -> u32 {
     // More variations appear at higher distances and levels
     match distance {
         1 => 1,
-        2 => if level < 5 { 1 } else { 2 },
-        3 => if level < 8 { 2 } else { 3 },
+        2 => {
+            if level < 5 {
+                1
+            } else {
+                2
+            }
+        }
+        3 => {
+            if level < 8 {
+                2
+            } else {
+                3
+            }
+        }
         _ => (distance / 2).min(5),
     }
 }
@@ -201,30 +211,26 @@ fn calculate_shape_variations(distance: u32, level: u32) -> u32 {
 fn generate_hexagon_shape(radius: f64, level: u32, distance: u32, variation: u32) -> TileShape {
     // Base size decreases with distance from pentagons
     let base_scale = radius / (1.0 + 0.05 * distance as f64 + 0.01 * (level as f64).ln());
-    
+
     // Shape distortion based on variation
     let elongation = 1.0 + 0.1 * (variation as f64 / 5.0);
-    
+
     let angle_step = 2.0 * PI / 6.0;
     let vertices: Vec<Point> = (0..6)
         .map(|i| {
             let angle = i as f64 * angle_step;
-            
+
             // Apply elongation along certain axes
             let scale = if i % 3 == variation as usize % 3 {
                 base_scale * elongation
             } else {
                 base_scale / elongation.sqrt()
             };
-            
-            Point::new(
-                scale * angle.cos(),
-                0.0,
-                scale * angle.sin()
-            )
+
+            Point::new(scale * angle.cos(), 0.0, scale * angle.sin())
         })
         .collect();
-    
+
     TileShape {
         vertices,
         sides: 6,
@@ -235,8 +241,9 @@ fn generate_hexagon_shape(radius: f64, level: u32, distance: u32, variation: u32
 /// Generates an interpolated shape for filling gaps.
 fn generate_interpolated_shape(base: &TileShape, variation: usize) -> TileShape {
     let factor = 1.0 + 0.01 * (variation as f64);
-    
-    let vertices: Vec<Point> = base.vertices
+
+    let vertices: Vec<Point> = base
+        .vertices
         .iter()
         .enumerate()
         .map(|(i, v)| {
@@ -248,7 +255,7 @@ fn generate_interpolated_shape(base: &TileShape, variation: usize) -> TileShape 
             Point::new(v.x * scale, v.y * scale, v.z * scale)
         })
         .collect();
-    
+
     TileShape {
         vertices,
         sides: base.sides,
@@ -260,21 +267,24 @@ fn generate_interpolated_shape(base: &TileShape, variation: usize) -> TileShape 
 ///
 /// For high subdivision levels, this uses mathematical formulas
 /// rather than explicit enumeration.
-fn generate_instance_positions(level: u32, shapes: &[TileShape]) -> Result<Vec<TileInstance>, String> {
+fn generate_instance_positions(
+    level: u32,
+    shapes: &[TileShape],
+) -> Result<Vec<TileInstance>, String> {
     if level > 30 {
         return Err("Full instance generation not supported above level 30".to_string());
     }
-    
+
     // This is a placeholder - full implementation would use
     // icosahedral coordinate generation and symmetry groups
     let mut instances = Vec::new();
-    
+
     // Pentagon instances (always 12)
     for i in 0..12 {
         let (lat, lon) = icosahedron_vertex_coords(i);
         let center = spherical_to_cartesian(lat, lon, 1.0);
         let orientation = calculate_pentagon_orientation(i);
-        
+
         instances.push(TileInstance {
             shape_index: 0,
             center,
@@ -282,10 +292,10 @@ fn generate_instance_positions(level: u32, shapes: &[TileShape]) -> Result<Vec<T
             tile_index: i,
         });
     }
-    
+
     // Hexagon instances would be generated using symmetry patterns
     // This is simplified - real implementation would be more complex
-    
+
     Ok(instances)
 }
 
@@ -312,7 +322,7 @@ fn spherical_to_cartesian(lat: f64, lon: f64, radius: f64) -> Point {
     Point::new(
         radius * lat.cos() * lon.cos(),
         radius * lat.sin(),
-        radius * lat.cos() * lon.sin()
+        radius * lat.cos() * lon.sin(),
     )
 }
 
@@ -331,25 +341,25 @@ use crate::geometry::Vector3; // Add this import
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_shape_count_estimation() {
         assert_eq!(estimate_shape_count(50), 1416);
         assert_eq!(estimate_shape_count(100), 4316);
     }
-    
+
     #[test]
     fn test_high_subdivision_generation() {
         let config = HighSubdivisionConfig {
             subdivision_level: 50,
             radius: 1.0,
-            generate_instances: false, // Shape only
+            generate_instances: false,     // Shape only
             max_memory_bytes: 1024 * 1024, // 1MB
         };
-        
+
         let result = generate_high_subdivision_shapes(&config);
         assert!(result.is_ok());
-        
+
         let data = result.unwrap();
         assert_eq!(data.shapes.len(), estimate_shape_count(50));
         assert_eq!(data.instances.len(), 0); // No instances requested
