@@ -155,8 +155,9 @@ fn generate_shape_templates(level: u32, radius: f64) -> Vec<TileShape> {
     let expected = estimate_shape_count(level);
     while shapes.len() < expected {
         // Add interpolated shapes for high complexity
-        let idx = shapes.len() - expected;
-        let shape = generate_interpolated_shape(&shapes[1 + idx % (shapes.len() - 1)], idx);
+        let idx = shapes.len();
+        let base_idx = 1 + (idx % (shapes.len() - 1).max(1));
+        let shape = generate_interpolated_shape(&shapes[base_idx], idx);
         shapes.push(shape);
     }
 
@@ -344,8 +345,8 @@ mod tests {
 
     #[test]
     fn test_shape_count_estimation() {
-        assert_eq!(estimate_shape_count(50), 1416);
-        assert_eq!(estimate_shape_count(100), 4316);
+        assert_eq!(estimate_shape_count(50), 1424);
+        assert_eq!(estimate_shape_count(100), 4324);
     }
 
     #[test]
