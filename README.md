@@ -123,7 +123,7 @@ This approach provides significant benefits:
 Geodesic polyhedra are created by:
 
 1. **Starting with an icosahedron** (20 triangular faces, 12 vertices)
-2. **Subdividing each triangle** into smaller triangles (4^n growth)
+2. **Subdividing each triangle** into smaller triangles (4 per level)
 3. **Projecting vertices** onto a sphere surface
 4. **Creating dual polyhedron** where vertices become tile centers
 5. **Forming tile boundaries** using triangle face centroids

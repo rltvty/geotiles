@@ -38,12 +38,12 @@ At low subdivision levels, all hexagons at the same distance have identical shap
 ### Memory Savings
 
 For subdivision level 100:
-- Traditional: ~10^61 tiles × 200 bytes = physically impossible
+- Traditional: 100,002 tiles × 200 bytes = ~20MB
 - Pattern-based: ~4,316 shapes × 72 bytes + instances × 32 bytes = ~300KB + instance data
 
 ### Computational Speedup
 
-- Traditional: O(4^n) tile generation
+- Traditional: O(n²) tile generation (quadratic growth)
 - Pattern-based: O(n) shape generation
 
 For level 100:
@@ -82,8 +82,8 @@ render_instanced(shape_buffer, instance_buffer);
 ### Memory Considerations
 
 At extremely high levels, even storing instance data becomes challenging:
-- Level 50: ~3×10^30 tiles
-- Level 100: ~10^61 tiles
+- Level 50: 25,002 tiles (10×50² + 2)
+- Level 100: 100,002 tiles (10×100² + 2)
 
 Solutions:
 1. **Hierarchical representation**: Store rules, not instances
