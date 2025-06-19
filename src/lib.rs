@@ -34,7 +34,7 @@
 //! // Create a hexasphere with radius 10, 3 subdivision levels, 90% tile size
 //! let hexasphere = Hexasphere::new(10.0, 3, 0.9);
 //!
-//! println!("Generated {} tiles", hexasphere.tiles.len());
+//! println!("Generated {} tiles", hexasphere.tiles.len()); // 92 tiles for level 3
 //!
 //! // Analyze hexagon properties for regular hexagon approximation
 //! let stats = hexasphere.calculate_hexagon_stats();
@@ -49,6 +49,11 @@
 //! // Export for 3D visualization
 //! let obj_content = hexasphere.to_obj();
 //! std::fs::write("hexasphere.obj", obj_content).unwrap();
+//!
+//! // NEW: Use shape instancing for efficient rendering
+//! let shape_data = hexasphere.get_shape_instances();
+//! println!("Reduced {} tiles to {} unique shapes",
+//!     shape_data.instances.len(), shape_data.shapes.len());
 //! ```
 
 pub mod approximation;
@@ -60,6 +65,9 @@ pub mod utils;
 // Re-export main types for convenience
 pub use approximation::RegularHexagonParams;
 pub use geometry::{Face, Point, Vector3};
-pub use hexasphere::{HexagonStats, Hexasphere};
-pub use tile::{ThickTile, Tile};
+pub use hexasphere::{
+    HexagonInstance, HexagonShape, HexagonStats, Hexasphere, InstancedHexasphere, ShapeAnalyzer, ShapeInstance,
+    ShapeInstanceData, ShapeTemplate, TileInstance, TileShape,
+};
+pub use tile::{ThickTile, Tile, TileOrientation};
 pub use utils::LatLon;
