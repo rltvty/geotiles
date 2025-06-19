@@ -37,7 +37,7 @@ pub mod shape_instances;
 pub mod shape_theory;
 pub mod statistics;
 
-pub use core::{Hexasphere, SimplificationStats};
+pub use core::{Hexasphere, HexagonInstance, SimplificationStats};
 pub use shape_analysis::{HexagonShape, ShapeAnalyzer};
 pub use shape_export::{InstancedHexasphere, ShapeInstance, ShapeTemplate};
 pub use shape_instances::{ShapeInstanceData, TileInstance, TileShape};

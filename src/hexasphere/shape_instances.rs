@@ -36,6 +36,78 @@ pub struct ShapeInstanceData {
 }
 
 impl TileShape {
+    /// Create a shape from a tile with vertices normalized to lie in the XY-plane.
+    ///
+    /// This method creates a flattened version of the tile shape where all vertices
+    /// have Z=0, making it suitable for use with 2D shape systems like Bevy's
+    /// ConvexPolygon. The tile's 3D orientation is "baked out" so that the 
+    /// TileInstance transform handles both positioning and rotation.
+    ///
+    /// # Arguments
+    ///
+    /// * `tile` - The tile to extract shape from
+    /// * `orientation` - The tile's orientation for normalization
+    ///
+    /// # Returns
+    ///
+    /// A TileShape with vertices in the XY-plane (Z=0)
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use geotiles::{Hexasphere, TileShape};
+    /// let hexasphere = Hexasphere::new(1.0, 2, 1.0);
+    /// let tile = &hexasphere.tiles[0];
+    /// let orientation = tile.get_orientation().unwrap();
+    /// let normalized_shape = TileShape::from_tile_normalized(tile, &orientation);
+    /// 
+    /// // All vertices will have Z ≈ 0
+    /// for vertex in &normalized_shape.vertices {
+    ///     assert!((vertex.z).abs() < 1e-10);
+    /// }
+    /// ```
+    pub fn from_tile_normalized(tile: &Tile, orientation: &crate::tile::TileOrientation) -> Self {
+        let center = &tile.center_point;
+
+        // Convert to local coordinates relative to center
+        let local_vertices: Vec<Point> = tile
+            .boundary
+            .iter()
+            .map(|p| Point::new(p.x - center.x, p.y - center.y, p.z - center.z))
+            .collect();
+
+        // Create inverse transform to normalize to XY-plane
+        // The orientation gives us the tile's local coordinate system
+        let right = &orientation.right;
+        let _up = &orientation.up; 
+        let forward = &orientation.forward;
+
+        // Transform vertices to the tile's local 2D coordinate system
+        let normalized_vertices: Vec<Point> = local_vertices
+            .iter()
+            .map(|local_vertex| {
+                // Project onto the tile's right and forward axes (ignore up/normal)
+                let local_x = local_vertex.x * right.x + local_vertex.y * right.y + local_vertex.z * right.z;
+                let local_y = local_vertex.x * forward.x + local_vertex.y * forward.y + local_vertex.z * forward.z;
+                
+                Point::new(local_x, local_y, 0.0) // Flattened to XY-plane
+            })
+            .collect();
+
+        // Calculate average radius in 2D
+        let radius = normalized_vertices
+            .iter()
+            .map(|v| (v.x * v.x + v.y * v.y).sqrt())
+            .sum::<f64>()
+            / normalized_vertices.len() as f64;
+
+        TileShape {
+            vertices: normalized_vertices,
+            sides: tile.boundary.len(),
+            radius,
+        }
+    }
+
     /// Create a normalized shape from a tile
     fn from_tile(tile: &Tile) -> Self {
         let center = &tile.center_point;
@@ -145,6 +217,116 @@ impl Hexasphere {
             .collect();
 
         ShapeInstanceData { shapes, instances }
+    }
+
+    /// Get normalized shape instances with vertices flattened to the XY-plane.
+    ///
+    /// This method creates shape instances where each TileShape has vertices
+    /// normalized to lie in the XY-plane (Z=0), making them suitable for use
+    /// with 2D shape systems like Bevy's ConvexPolygon. The original 3D 
+    /// orientation is "baked out" of the shape geometry.
+    ///
+    /// # Arguments
+    ///
+    /// * `max_shapes` - Maximum number of unique hexagon shapes to create (pentagons are always separate)
+    /// * `tolerance` - Geometric error tolerance for shape clustering (0.0 = exact, 1.0 = very loose)
+    ///
+    /// # Returns
+    ///
+    /// A `ShapeInstanceData` structure with normalized shapes
+    ///
+    /// # Benefits for Bevy Integration
+    ///
+    /// - **Compatible with ConvexPolygon**: Shapes can be used directly with Bevy's 2D shape system
+    /// - **Simplified rendering**: No need for custom mesh generation
+    /// - **Potential performance gains**: Leverage Bevy's optimized shape rendering
+    /// - **Controllable complexity**: Limit number of unique shapes for performance
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use geotiles::Hexasphere;
+    /// let hexasphere = Hexasphere::new(1.0, 4, 0.95);
+    /// let shape_data = hexasphere.get_normalized_shape_instances(15, 0.05);
+    ///
+    /// // All shape vertices will have Z ≈ 0
+    /// for shape in &shape_data.shapes {
+    ///     for vertex in &shape.vertices {
+    ///         assert!((vertex.z).abs() < 1e-10);
+    ///     }
+    /// }
+    /// 
+    /// // Use with Bevy ConvexPolygon:
+    /// // let points: Vec<Vec2> = shape.vertices.iter()
+    /// //     .map(|v| Vec2::new(v.x as f32, v.y as f32))
+    /// //     .collect();
+    /// // let polygon = ConvexPolygon::new(points);
+    /// ```
+    pub fn get_normalized_shape_instances(&self, max_shapes: usize, tolerance: f64) -> ShapeInstanceData {
+        // Get the simplified shapes first (this handles the max_shapes and tolerance logic)
+        let (simplified_shapes, simplified_instances, _stats) = self.get_simplified_shapes(max_shapes, tolerance);
+        
+        // Convert the simplified shapes to normalized versions
+        let normalized_shapes: Vec<TileShape> = simplified_shapes
+            .iter()
+            .enumerate()
+            .map(|(shape_idx, _simplified_shape)| {
+                // Find a representative instance for this shape to get the tile
+                if let Some(instance) = simplified_instances.iter().find(|inst| inst.shape_index == shape_idx) {
+                    let tile = &self.tiles[instance.tile_index];
+                    if let Some(orientation) = tile.get_orientation() {
+                        TileShape::from_tile_normalized(tile, &orientation)
+                    } else {
+                        // Fallback: use the simplified shape as-is
+                        simplified_shapes[shape_idx].clone()
+                    }
+                } else {
+                    // Fallback: use the simplified shape as-is
+                    simplified_shapes[shape_idx].clone()
+                }
+            })
+            .collect();
+
+        // Convert simplified instances to TileInstance format with orientations
+        let normalized_instances: Vec<TileInstance> = simplified_instances
+            .iter()
+            .filter_map(|simplified_instance| {
+                let tile = &self.tiles[simplified_instance.tile_index];
+                tile.get_orientation().map(|orientation| TileInstance {
+                    shape_index: simplified_instance.shape_index,
+                    center: simplified_instance.center.clone(),
+                    orientation,
+                    tile_index: simplified_instance.tile_index,
+                })
+            })
+            .collect();
+
+        ShapeInstanceData { 
+            shapes: normalized_shapes, 
+            instances: normalized_instances 
+        }
+    }
+
+    /// Get normalized shape instances with default parameters.
+    ///
+    /// This is a convenience method that calls `get_normalized_shape_instances`
+    /// with sensible default values for typical usage.
+    ///
+    /// # Defaults
+    ///
+    /// - `max_shapes`: 20 (good balance of compression vs accuracy)
+    /// - `tolerance`: 0.05 (5% geometric error tolerance)
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use geotiles::Hexasphere;
+    /// let hexasphere = Hexasphere::new(1.0, 4, 0.95);
+    /// let shape_data = hexasphere.get_normalized_shape_instances_default();
+    /// // Equivalent to: hexasphere.get_normalized_shape_instances(20, 0.05)
+    /// ```
+    pub fn get_normalized_shape_instances_default(&self) -> ShapeInstanceData {
+        self.get_normalized_shape_instances(20, 0.05)
     }
 
     /// Get shape instances only for hexagonal tiles.
@@ -328,4 +510,55 @@ mod tests {
             assert_eq!(instance.shape_index, 0);
         }
     }
+
+    #[test]
+    fn test_normalized_shapes() {
+        let hs = Hexasphere::new(1.0, 2, 1.0);
+        let max_shapes = 10;
+        let tolerance = 0.05;
+        let shape_data = hs.get_normalized_shape_instances(max_shapes, tolerance);
+        
+        // Should have shapes and instances
+        assert!(!shape_data.shapes.is_empty());
+        assert!(!shape_data.instances.is_empty());
+        
+        // All shapes should be flattened to XY-plane (Z ≈ 0)
+        for shape in &shape_data.shapes {
+            for vertex in &shape.vertices {
+                assert!(vertex.z.abs() < 1e-10, 
+                    "Vertex Z={} should be near zero for normalized shape", vertex.z);
+            }
+            
+            // Should still have proper geometry in XY
+            assert!(shape.vertices.len() >= 5); // At least pentagon
+            assert!(shape.radius > 0.0);
+        }
+        
+        // Compare with simplified shapes to ensure we get the same counts
+        let (simplified_shapes, simplified_instances, _stats) = hs.get_simplified_shapes(max_shapes, tolerance);
+        assert_eq!(shape_data.shapes.len(), simplified_shapes.len());
+        assert_eq!(shape_data.instances.len(), simplified_instances.len());
+    }
+
+    #[test]
+    fn test_normalized_tile_shape() {
+        let hs = Hexasphere::new(1.0, 2, 1.0);
+        let tile = &hs.tiles[0];
+        
+        if let Some(orientation) = tile.get_orientation() {
+            let normalized_shape = TileShape::from_tile_normalized(tile, &orientation);
+            
+            // All vertices should have Z ≈ 0
+            for vertex in &normalized_shape.vertices {
+                assert!(vertex.z.abs() < 1e-10, 
+                    "Normalized vertex Z={} should be near zero", vertex.z);
+            }
+            
+            // Should preserve basic properties
+            assert_eq!(normalized_shape.sides, tile.boundary.len());
+            assert!(normalized_shape.radius > 0.0);
+            assert_eq!(normalized_shape.vertices.len(), tile.boundary.len());
+        }
+    }
+
 }
