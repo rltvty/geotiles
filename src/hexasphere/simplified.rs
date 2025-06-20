@@ -270,179 +270,103 @@ impl Hexasphere {
         max_shapes: usize,
         tolerance: f64,
     ) -> ShapeInstanceData {
-        // Get the simplified shapes first (this handles the max_shapes and tolerance logic)
-        let (simplified_shapes, simplified_instances, _stats) =
-            self.get_simplified_shapes(max_shapes, tolerance);
-
-        // Convert the simplified shapes to normalized versions
-        let normalized_shapes: Vec<TileShape> = simplified_shapes
-            .iter()
-            .enumerate()
-            .map(|(shape_idx, _simplified_shape)| {
-                // Find a representative instance for this shape to get the tile
-                if let Some(instance) = simplified_instances
-                    .iter()
-                    .find(|inst| inst.shape_index == shape_idx)
-                {
-                    let tile = &self.tiles[instance.tile_index];
-                    if let Some(orientation) = tile.get_orientation() {
-                        TileShape::from_tile_normalized(tile, &orientation)
-                    } else {
-                        // Fallback: use the simplified shape as-is
-                        simplified_shapes[shape_idx].clone()
-                    }
-                } else {
-                    // Fallback: use the simplified shape as-is
-                    simplified_shapes[shape_idx].clone()
-                }
-            })
-            .collect();
-
-        // Convert simplified instances to TileInstance format with orientations
-        let normalized_instances: Vec<TileInstance> = simplified_instances
-            .iter()
-            .filter_map(|simplified_instance| {
-                let tile = &self.tiles[simplified_instance.tile_index];
-                tile.get_orientation().map(|orientation| TileInstance {
-                    shape_index: simplified_instance.shape_index,
-                    center: simplified_instance.center.clone(),
-                    orientation,
-                    tile_index: simplified_instance.tile_index,
-                })
-            })
-            .collect();
-
-        ShapeInstanceData {
-            shapes: normalized_shapes,
-            instances: normalized_instances,
-        }
-    }
-
-    /// Get simplified shape instances using radius-based clustering.
-    ///
-    /// This method provides a second layer of optimization on top of natural shape instancing.
-    /// It groups similar hexagon shapes together and uses representative shapes, allowing
-    /// for massive additional compression with tunable quality trade-offs.
-    ///
-    /// # Arguments
-    ///
-    /// * `max_shapes` - Maximum number of shapes desired (must be >= 12 for pentagons)
-    /// * `tolerance` - Geometric tolerance for clustering (0.0 = exact, 0.1 = 10% radius difference allowed)
-    ///
-    /// # Returns
-    ///
-    /// A tuple containing:
-    /// - `Vec<TileShape>`: The simplified set of representative shapes
-    /// - `Vec<TileInstance>`: Instance data mapping each tile to a simplified shape
-    /// - `SimplificationStats`: Statistics about the approximation quality
-    ///
-    /// # Performance Benefits
-    ///
-    /// This can provide 5-10x additional compression on top of natural instancing:
-    /// - Level 20: 356 shapes → 50 shapes (7x additional compression)
-    /// - Level 30: 824 shapes → 100 shapes (8x additional compression)
-    /// - Combined: 9,000 tiles → 100 shapes (90x total compression!)
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use geotiles::Hexasphere;
-    /// let hexasphere = Hexasphere::new(1.0, 20, 0.95);
-    ///
-    /// // Ultra performance: reduce to ~25 shapes with 5% tolerance
-    /// let (shapes, instances, stats) = hexasphere.get_simplified_shapes(25, 0.05);
-    ///
-    /// println!("Reduced {} natural shapes to {} simplified shapes",
-    ///     stats.original_shape_count, shapes.len());
-    /// println!("Geometric error: {:.2}% average, {:.2}% maximum",
-    ///     stats.average_error * 100.0, stats.max_error * 100.0);
-    ///
-    /// // Perfect for GPU instancing with minimal draw calls
-    /// for (i, shape) in shapes.iter().enumerate() {
-    ///     let instance_count = instances.iter().filter(|inst| inst.shape_index == i).count();
-    ///     println!("Shape {}: {} instances", i, instance_count);
-    /// }
-    /// ```
-    pub fn get_simplified_shapes(
-        &self,
-        max_shapes: usize,
-        tolerance: f64,
-    ) -> (Vec<TileShape>, Vec<TileInstance>, SimplificationStats) {
         // Get natural shape instances first
         let natural_shapes = self.get_shape_instances();
-
-        // Count hexagon shapes for comparison
-        let hexagon_shape_count = natural_shapes
-            .shapes
-            .iter()
-            .filter(|shape| shape.sides == 6)
-            .count();
-
-        if max_shapes >= hexagon_shape_count {
-            // No simplification needed for hexagons
-            // Count pentagon instances in the original data
-            let pentagon_instances_count = natural_shapes
-                .instances
-                .iter()
-                .filter(|instance| natural_shapes.shapes[instance.shape_index].sides == 5)
-                .count();
-
-            let stats = SimplificationStats {
-                original_shape_count: hexagon_shape_count,
-                simplified_shape_count: hexagon_shape_count,
-                compression_ratio: 1.0,
-                average_error: 0.0,
-                max_error: 0.0,
-                pentagon_shapes_preserved: pentagon_instances_count,
-            };
-            return (natural_shapes.shapes, natural_shapes.instances, stats);
-        }
-
+        
         // Separate pentagons and hexagons
         let (pentagon_shapes, hexagon_shapes): (Vec<_>, Vec<_>) = natural_shapes
             .shapes
             .iter()
             .enumerate()
             .partition(|(_, shape)| shape.sides == 5);
-
-        let _pentagon_count = pentagon_shapes.len();
-
-        // Pentagons are always preserved separately, so we focus only on hexagon clustering
-        let target_hexagon_shapes = max_shapes;
-
+        
+        // Count hexagon shapes for comparison
+        let hexagon_shape_count = hexagon_shapes.len();
+        
+        if max_shapes >= hexagon_shape_count {
+            // No simplification needed - just normalize all shapes
+            let normalized_shapes: Vec<TileShape> = natural_shapes.shapes
+                .iter()
+                .enumerate()
+                .map(|(shape_idx, _)| {
+                    // Find a representative instance for this shape to get the tile
+                    if let Some(instance) = natural_shapes.instances
+                        .iter()
+                        .find(|inst| inst.shape_index == shape_idx)
+                    {
+                        let tile = &self.tiles[instance.tile_index];
+                        if let Some(orientation) = tile.get_orientation() {
+                            TileShape::from_tile_normalized(tile, &orientation)
+                        } else {
+                            natural_shapes.shapes[shape_idx].clone()
+                        }
+                    } else {
+                        natural_shapes.shapes[shape_idx].clone()
+                    }
+                })
+                .collect();
+            
+            return ShapeInstanceData {
+                shapes: normalized_shapes,
+                instances: natural_shapes.instances,
+            };
+        }
+        
         // Cluster hexagon shapes by radius similarity
-        let hexagon_clusters =
-            self.cluster_hexagons_by_radius(&hexagon_shapes, target_hexagon_shapes, tolerance);
-
+        let hexagon_clusters = self.cluster_hexagons_by_radius(&hexagon_shapes, max_shapes, tolerance);
+        
         // Build simplified shapes and instances
         let mut simplified_shapes = Vec::new();
         let mut simplified_instances = Vec::new();
-        let mut total_error = 0.0f64;
-        let mut max_error = 0.0f64;
-        let mut hexagon_instance_count = 0;
-
+        
         // Add all pentagon shapes first (never simplified)
-        for (original_idx, pentagon_shape) in pentagon_shapes {
-            simplified_shapes.push(pentagon_shape.clone());
+        for (original_idx, _pentagon_shape) in pentagon_shapes {
+            // Create normalized pentagon shape
+            if let Some(instance) = natural_shapes.instances
+                .iter()
+                .find(|inst| inst.shape_index == original_idx)
+            {
+                let tile = &self.tiles[instance.tile_index];
+                if let Some(orientation) = tile.get_orientation() {
+                    simplified_shapes.push(TileShape::from_tile_normalized(tile, &orientation));
+                } else {
+                    simplified_shapes.push(natural_shapes.shapes[original_idx].clone());
+                }
+            } else {
+                simplified_shapes.push(natural_shapes.shapes[original_idx].clone());
+            }
+            
             let shape_index = simplified_shapes.len() - 1;
-
+            
             // Find all instances that used this pentagon shape
             for instance in &natural_shapes.instances {
                 if instance.shape_index == original_idx {
                     let mut new_instance = instance.clone();
                     new_instance.shape_index = shape_index;
                     simplified_instances.push(new_instance);
-                    // Don't count pentagon instances in error calculation
                 }
             }
         }
-
+        
         // Add clustered hexagon shapes
         for cluster in hexagon_clusters {
-            let representative_shape = &cluster.representative;
-            simplified_shapes.push(representative_shape.clone());
+            // Create normalized representative shape
+            if let Some(instance) = natural_shapes.instances
+                .iter()
+                .find(|inst| inst.shape_index == cluster.members[0].original_index)
+            {
+                let tile = &self.tiles[instance.tile_index];
+                if let Some(orientation) = tile.get_orientation() {
+                    simplified_shapes.push(TileShape::from_tile_normalized(tile, &orientation));
+                } else {
+                    simplified_shapes.push(cluster.representative.clone());
+                }
+            } else {
+                simplified_shapes.push(cluster.representative.clone());
+            }
+            
             let shape_index = simplified_shapes.len() - 1;
-
+            
             // Add instances for all shapes in this cluster
             for member in &cluster.members {
                 for instance in &natural_shapes.instances {
@@ -450,47 +374,17 @@ impl Hexasphere {
                         let mut new_instance = instance.clone();
                         new_instance.shape_index = shape_index;
                         simplified_instances.push(new_instance);
-
-                        // Track approximation error (hexagons only)
-                        let error = member.error;
-                        total_error += error;
-                        max_error = max_error.max(error);
-                        hexagon_instance_count += 1;
                     }
                 }
             }
         }
-
-        // Count pentagon instances (should always be 12)
-        let pentagon_instances_count = simplified_instances
-            .iter()
-            .filter(|instance| simplified_shapes[instance.shape_index].sides == 5)
-            .count();
-
-        // Calculate compression ratio based only on hexagon shapes
-        let original_hexagon_count = hexagon_shapes.len();
-        let simplified_hexagon_count = simplified_shapes.iter().filter(|s| s.sides == 6).count();
-        let hexagon_compression_ratio = if simplified_hexagon_count > 0 {
-            original_hexagon_count as f64 / simplified_hexagon_count as f64
-        } else {
-            1.0
-        };
-
-        let stats = SimplificationStats {
-            original_shape_count: original_hexagon_count,
-            simplified_shape_count: simplified_hexagon_count,
-            compression_ratio: hexagon_compression_ratio,
-            average_error: if hexagon_instance_count > 0 {
-                total_error / hexagon_instance_count as f64
-            } else {
-                0.0
-            },
-            max_error,
-            pentagon_shapes_preserved: pentagon_instances_count,
-        };
-
-        (simplified_shapes, simplified_instances, stats)
+        
+        ShapeInstanceData {
+            shapes: simplified_shapes,
+            instances: simplified_instances,
+        }
     }
+
 
     /// Helper method to cluster hexagon shapes by radius similarity
     fn cluster_hexagons_by_radius(
@@ -511,7 +405,6 @@ impl Hexasphere {
                     representative: (*shape).clone(),
                     members: vec![ClusterMember {
                         original_index: *idx,
-                        error: 0.0,
                     }],
                 })
                 .collect();
@@ -532,7 +425,6 @@ impl Hexasphere {
                 representative: seed_shape.clone(),
                 members: vec![ClusterMember {
                     original_index: seed_idx,
-                    error: 0.0,
                 }],
             };
             used[i] = true;
@@ -550,7 +442,6 @@ impl Hexasphere {
                 if relative_error <= tolerance {
                     cluster.members.push(ClusterMember {
                         original_index: candidate_idx,
-                        error: relative_error,
                     });
                     used[j] = true;
                 }
@@ -589,7 +480,6 @@ impl Hexasphere {
 
             clusters[best_cluster].members.push(ClusterMember {
                 original_index: orphan_idx,
-                error: best_error,
             });
         }
 
@@ -722,25 +612,6 @@ impl Hexasphere {
     }
 }
 
-/// Statistics about hexagon shape simplification quality and performance
-///
-/// Note: Pentagon shapes are always preserved separately and not included in these metrics.
-/// All compression ratios and error measurements apply only to hexagon shapes.
-#[derive(Debug, Clone)]
-pub struct SimplificationStats {
-    /// Original number of hexagon shapes before simplification
-    pub original_shape_count: usize,
-    /// Number of hexagon shapes after simplification
-    pub simplified_shape_count: usize,
-    /// Compression ratio achieved for hexagons (original_count / simplified_count)
-    pub compression_ratio: f64,
-    /// Average geometric error across hexagon instances only
-    pub average_error: f64,
-    /// Maximum geometric error for any hexagon instance
-    pub max_error: f64,
-    /// Number of pentagon instances preserved (always 12 for valid spheres)
-    pub pentagon_shapes_preserved: usize,
-}
 
 /// A cluster of similar hexagon shapes with a representative
 #[derive(Debug, Clone)]
@@ -756,8 +627,6 @@ struct HexagonCluster {
 struct ClusterMember {
     /// Original index of this shape in the natural shape array
     original_index: usize,
-    /// Geometric error when using the cluster representative instead of this shape
-    error: f64,
 }
 
 #[cfg(test)]
@@ -842,11 +711,8 @@ mod tests {
             assert!(shape.radius > 0.0);
         }
 
-        // Compare with simplified shapes to ensure we get the same counts
-        let (simplified_shapes, simplified_instances, _stats) =
-            hs.get_simplified_shapes(max_shapes, tolerance);
-        assert_eq!(shape_data.shapes.len(), simplified_shapes.len());
-        assert_eq!(shape_data.instances.len(), simplified_instances.len());
+        // Verify instance count matches tile count
+        assert_eq!(shape_data.instances.len(), hs.tiles.len());
     }
 
     #[test]

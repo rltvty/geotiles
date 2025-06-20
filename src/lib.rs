@@ -61,8 +61,7 @@ pub mod utils;
 pub use approximation::RegularHexagonParams;
 pub use geometry::{Face, Point, Vector3};
 pub use hexasphere::{
-    HexagonShape, HexagonStats, Hexasphere, ShapeAnalyzer, ShapeInstanceData, TileInstance,
-    TileShape,
+    HexagonStats, Hexasphere, ShapeAnalyzer, ShapeInstanceData, TileInstance, TileShape,
 };
 pub use tile::{ThickTile, Tile, TileOrientation};
 pub use utils::LatLon;

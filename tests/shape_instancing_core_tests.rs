@@ -1,4 +1,4 @@
-use geotiles::hexasphere::{Hexasphere, ShapeAnalyzer};
+use geotiles::{Hexasphere, ShapeAnalyzer, TileShape};
 use std::collections::HashSet;
 
 /// Test that shape instancing produces the same tile geometry as the original approach
@@ -17,7 +17,7 @@ fn test_shape_instances_preserve_geometry() {
         );
 
         // Verify that reconstructed tiles match original tiles
-        for (i, instance) in shape_data.instances.iter().enumerate() {
+        for instance in shape_data.instances.iter() {
             let original_tile = &hexasphere.tiles[instance.tile_index];
             let shape = &shape_data.shapes[instance.shape_index];
 
@@ -297,4 +297,200 @@ fn test_instance_orientations() {
             );
         }
     }
+}
+
+/// Test normalized shape instances functionality
+#[test]
+fn test_normalized_shapes() {
+    let hs = Hexasphere::new(1.0, 2, 1.0);
+    let max_shapes = 10;
+    let tolerance = 0.05;
+    let shape_data = hs.get_normalized_shape_instances(max_shapes, tolerance);
+
+    // Should have shapes and instances
+    assert!(!shape_data.shapes.is_empty());
+    assert!(!shape_data.instances.is_empty());
+
+    // All shapes should be flattened to XY-plane (Z ≈ 0)
+    for shape in &shape_data.shapes {
+        for vertex in &shape.vertices {
+            assert!(
+                vertex.z.abs() < 1e-10,
+                "Vertex Z={} should be near zero for normalized shape",
+                vertex.z
+            );
+        }
+
+        // Should still have proper geometry in XY
+        assert!(shape.vertices.len() >= 5); // At least pentagon
+        assert!(shape.radius > 0.0);
+    }
+}
+
+/// Test normalized tile shape creation
+#[test]
+fn test_normalized_tile_shape() {
+    let hs = Hexasphere::new(1.0, 2, 1.0);
+    let tile = &hs.tiles[0];
+
+    if let Some(orientation) = tile.get_orientation() {
+        let normalized_shape = TileShape::from_tile_normalized(tile, &orientation);
+
+        // All vertices should have Z ≈ 0
+        for vertex in &normalized_shape.vertices {
+            assert!(
+                vertex.z.abs() < 1e-10,
+                "Normalized vertex Z={} should be near zero",
+                vertex.z
+            );
+        }
+
+        // Should preserve basic properties
+        assert_eq!(normalized_shape.sides, tile.boundary.len());
+        assert!(normalized_shape.radius > 0.0);
+        assert_eq!(normalized_shape.vertices.len(), tile.boundary.len());
+    }
+}
+
+/// Test edge cases for normalized shape instances
+#[test]
+fn test_normalized_shape_edge_cases() {
+    let hexasphere = Hexasphere::new(1.0, 10, 0.95);
+    let natural_shapes = hexasphere.get_shape_instances();
+
+    // Test 1: Request more shapes than available (should return natural shapes)
+    let shape_data = hexasphere.get_normalized_shape_instances(1000, 0.05);
+    assert_eq!(shape_data.shapes.len(), natural_shapes.shapes.len());
+
+    // Test 2: Zero tolerance (should create many clusters)
+    let shape_data = hexasphere.get_normalized_shape_instances(50, 0.0);
+    assert_eq!(shape_data.instances.len(), hexasphere.tiles.len());
+
+    // Test 3: Very high tolerance (should create few clusters)
+    let shape_data = hexasphere.get_normalized_shape_instances(20, 0.5);
+    assert!(shape_data.shapes.len() <= 25); // Should cluster aggressively
+    assert_eq!(shape_data.instances.len(), hexasphere.tiles.len());
+
+    // Test 4: Minimum shapes (just pentagons + 1 hexagon)
+    let shape_data = hexasphere.get_normalized_shape_instances(13, 1.0);
+    let pentagon_count = shape_data.shapes.iter().filter(|s| s.sides == 5).count();
+    assert!(pentagon_count > 0); // Should preserve pentagons
+    assert!(shape_data.shapes.len() <= 13);
+    assert_eq!(shape_data.instances.len(), hexasphere.tiles.len());
+}
+
+/// Test that the tile count formula 10n² + 2 is correct for reasonable subdivision levels
+#[test]
+fn test_tile_count_formula_basic() {
+    let test_cases = [
+        (0, 12),    // Special case
+        (1, 12),    // 10(1) + 2 = 12
+        (2, 42),    // 10(4) + 2 = 42
+        (3, 92),    // 10(9) + 2 = 92
+        (4, 162),   // 10(16) + 2 = 162
+        (5, 252),   // 10(25) + 2 = 252
+        (10, 1002), // 10(100) + 2 = 1002
+    ];
+
+    for (n, expected) in test_cases {
+        let hexasphere = Hexasphere::new(1.0, n, 1.0);
+        let actual_count = hexasphere.tiles.len();
+
+        assert_eq!(
+            actual_count, expected,
+            "Tile count formula should be 10n² + 2 for subdivision level {}",
+            n
+        );
+    }
+}
+
+/// Test that hexagon count follows the expected pattern
+#[test]
+fn test_hexagon_count_pattern() {
+    for level in [1, 2, 3, 4, 5, 8] {
+        let hexasphere = Hexasphere::new(1.0, level, 1.0);
+        let hexagon_count = hexasphere
+            .tiles
+            .iter()
+            .filter(|tile| tile.boundary.len() == 6)
+            .count();
+
+        let total_tiles = hexasphere.tiles.len();
+        let expected_hexagons = total_tiles - 12; // Total minus 12 pentagons
+
+        assert_eq!(
+            hexagon_count, expected_hexagons,
+            "Hexagon count should be total tiles minus 12 at level {}",
+            level
+        );
+    }
+}
+
+/// Test that tiles are either pentagons or hexagons
+#[test]
+fn test_tile_types_only() {
+    for level in [2, 3, 4, 5] {
+        let hexasphere = Hexasphere::new(1.0, level, 1.0);
+
+        for (i, tile) in hexasphere.tiles.iter().enumerate() {
+            let sides = tile.boundary.len();
+            assert!(
+                sides == 5 || sides == 6,
+                "Tile {} at level {} should have 5 or 6 sides, found {}",
+                i,
+                level,
+                sides
+            );
+        }
+    }
+}
+
+/// Test basic generation and geometric properties
+#[test]
+fn test_basic_generation() {
+    let level = 6;
+    let hexasphere = Hexasphere::new(1.0, level, 1.0);
+
+    println!(
+        "Testing {} tiles at subdivision {}",
+        hexasphere.tiles.len(),
+        level
+    );
+
+    let mut pentagon_count = 0;
+    let mut hexagon_count = 0;
+
+    for tile in &hexasphere.tiles {
+        let sides = tile.boundary.len();
+
+        match sides {
+            5 => pentagon_count += 1,
+            6 => hexagon_count += 1,
+            n => panic!("Unexpected tile with {} sides", n),
+        }
+
+        // Check that tile has valid center
+        let center_distance = (tile.center_point.x.powi(2)
+            + tile.center_point.y.powi(2)
+            + tile.center_point.z.powi(2))
+        .sqrt();
+        assert!(
+            (center_distance - 1.0).abs() < 0.1,
+            "Tile center should be approximately on unit sphere"
+        );
+
+        // Check that boundary points are reasonable
+        for vertex in &tile.boundary {
+            let vertex_distance = (vertex.x.powi(2) + vertex.y.powi(2) + vertex.z.powi(2)).sqrt();
+            assert!(
+                vertex_distance > 0.5 && vertex_distance < 1.5,
+                "Boundary vertices should be near unit sphere"
+            );
+        }
+    }
+
+    assert_eq!(pentagon_count, 12, "Should have exactly 12 pentagons");
+    assert_eq!(hexagon_count + pentagon_count, hexasphere.tiles.len());
+
+    println!("Pentagons: {}, Hexagons: {}", pentagon_count, hexagon_count);
 }

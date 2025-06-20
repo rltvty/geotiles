@@ -7,6 +7,6 @@ pub mod simplified;
 pub mod statistics;
 
 pub use core::Hexasphere;
-pub use hexagon_analyzer::{HexagonShape, ShapeAnalyzer};
+pub use hexagon_analyzer::ShapeAnalyzer;
 pub use simplified::{ShapeInstanceData, TileInstance, TileShape};
 pub use statistics::HexagonStats;
