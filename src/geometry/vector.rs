@@ -14,7 +14,7 @@
 /// let cross = v1.cross(&v2); // Should point in Z direction
 /// let normalized = v1.normalize(); // Unit vector in X direction
 /// ```
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Vector3 {
     /// X component of the vector
     pub x: f64,
@@ -125,5 +125,51 @@ impl Vector3 {
     /// ```
     pub fn dot(&self, other: &Self) -> f64 {
         self.x * other.x + self.y * other.y + self.z * other.z
+    }
+
+    /// Calculates the magnitude (length) of the vector.
+    ///
+    /// # Returns
+    ///
+    /// The Euclidean length of the vector
+    pub fn magnitude(&self) -> f64 {
+        (self.x.powi(2) + self.y.powi(2) + self.z.powi(2)).sqrt()
+    }
+
+    /// Calculates the angle between this vector and another vector in radians.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - The second vector
+    ///
+    /// # Returns
+    ///
+    /// The angle in radians (0 to π)
+    pub fn angle_to(&self, other: &Self) -> f64 {
+        let dot = self.dot(other);
+        let mag_product = self.magnitude() * other.magnitude();
+        if mag_product == 0.0 {
+            0.0
+        } else {
+            (dot / mag_product).clamp(-1.0, 1.0).acos()
+        }
+    }
+}
+
+use std::ops::Sub;
+
+impl Sub for Vector3 {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self::new(self.x - rhs.x, self.y - rhs.y, self.z - rhs.z)
+    }
+}
+
+impl Sub for &Vector3 {
+    type Output = Vector3;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Vector3::new(self.x - rhs.x, self.y - rhs.y, self.z - rhs.z)
     }
 }
