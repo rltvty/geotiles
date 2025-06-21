@@ -85,7 +85,7 @@ for thick_tile in thick_tiles {
 Geodesic polyhedra are created by:
 
 1. **Starting with an icosahedron** (20 triangular faces, 12 vertices)
-2. **Subdividing each triangle** into smaller triangles (4^n growth)
+2. **Subdividing each triangle** into smaller triangles (4 per level)
 3. **Projecting vertices** onto a sphere surface
 4. **Creating dual polyhedron** where vertices become tile centers
 5. **Forming tile boundaries** using triangle face centroids
@@ -96,14 +96,16 @@ Due to Euler's formula for polyhedra (V - E + F = 2), it's mathematically imposs
 
 ### Subdivision Levels
 
-| Level | Tiles | Faces | Performance |
-|-------|-------|-------|-------------|
-| 0     | 12    | 20    | Instant     |
-| 1     | 42    | 80    | < 1ms       |
-| 2     | 162   | 320   | < 1ms       |
-| 3     | 642   | 1,280 | < 10ms      |
-| 4     | 2,562 | 5,120 | < 100ms     |
-| 5     | 10,242| 20,480| < 1s        |
+| Level | Tiles | Formula: 10n²+2 | Performance |
+|-------|-------|-----------------|-------------|
+| 1     | 12    | 12              | < 1ms       |
+| 2     | 42    | 42              | < 1ms       |
+| 3     | 92    | 92              | < 10ms      |
+| 4     | 162   | 162             | < 10ms      |
+| 5     | 252   | 252             | < 50ms      |
+| 10    | 1,002 | 1,002           | < 200ms     |
+| 20    | 4,002 | 4,002           | < 2s        |
+| 50    | 25,002| 25,002          | < 30s       |
 
 ## 🎮 Applications
 
@@ -194,10 +196,10 @@ hexasphereData.tiles.forEach((tile, index) => {
 
 ### Subdivision Level Selection
 
-- **Interactive applications**: Levels 2-4 (162-2,562 tiles)
-- **High-quality visualization**: Levels 4-6 (2,562-10,242 tiles)
-- **Scientific simulation**: Levels 5-7 (10,242-40,962 tiles)
-- **Real-time games**: Levels 1-3 (42-642 tiles)
+- **Real-time games**: Levels 2-5 (42-252 tiles)
+- **Interactive applications**: Levels 5-10 (252-1,002 tiles)  
+- **High-quality visualization**: Levels 10-20 (1,002-4,002 tiles)
+- **Scientific simulation**: Levels 20-50 (4,002-25,002 tiles)
 
 ### Memory Optimization
 

@@ -60,6 +60,8 @@ pub mod utils;
 // Re-export main types for convenience
 pub use approximation::RegularHexagonParams;
 pub use geometry::{Face, Point, Vector3};
-pub use hexasphere::{HexagonStats, Hexasphere};
-pub use tile::{ThickTile, Tile};
+pub use hexasphere::{
+    HexagonStats, Hexasphere, ShapeAnalyzer, ShapeInstanceData, TileInstance, TileShape,
+};
+pub use tile::{ThickTile, Tile, TileOrientation};
 pub use utils::LatLon;

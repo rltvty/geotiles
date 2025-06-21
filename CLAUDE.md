@@ -67,7 +67,7 @@ Alternative cube-based approaches offer more regular hexagons (90%+) but with di
 
 ### Core Algorithm Flow
 1. **Icosahedron Creation**: Start with 12 vertices positioned using golden ratio
-2. **Recursive Subdivision**: Each triangle subdivided into 4^n smaller triangles
+2. **Recursive Subdivision**: Each triangle subdivided into 4 smaller triangles per level
 3. **Sphere Projection**: All vertices normalized to sphere surface
 4. **Dual Generation**: Convert vertices to tile centers, faces to boundaries
 5. **Neighbor Resolution**: Establish connectivity between adjacent tiles
@@ -97,8 +97,8 @@ Alternative cube-based approaches offer more regular hexagons (90%+) but with di
 - **Export abstraction**: Separate module for different export formats
 
 ### Performance Notes
-- Tile count grows as ~10×4^(n-1) where n is subdivision level
-- Level 2 = ~160 tiles, Level 3 = ~640 tiles, Level 4 = ~2560 tiles
+- Tile count grows as 10n² + 2 where n is subdivision level (quadratic growth)
+- Level 2 = 42 tiles, Level 3 = 92 tiles, Level 4 = 162 tiles
 - Memory usage scales with tile count
 - Point deduplication uses HashMap during construction
 
