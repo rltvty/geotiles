@@ -272,25 +272,27 @@ impl Hexasphere {
     ) -> ShapeInstanceData {
         // Get natural shape instances first
         let natural_shapes = self.get_shape_instances();
-        
+
         // Separate pentagons and hexagons
         let (pentagon_shapes, hexagon_shapes): (Vec<_>, Vec<_>) = natural_shapes
             .shapes
             .iter()
             .enumerate()
             .partition(|(_, shape)| shape.sides == 5);
-        
+
         // Count hexagon shapes for comparison
         let hexagon_shape_count = hexagon_shapes.len();
-        
+
         if max_shapes >= hexagon_shape_count {
             // No simplification needed - just normalize all shapes
-            let normalized_shapes: Vec<TileShape> = natural_shapes.shapes
+            let normalized_shapes: Vec<TileShape> = natural_shapes
+                .shapes
                 .iter()
                 .enumerate()
                 .map(|(shape_idx, _)| {
                     // Find a representative instance for this shape to get the tile
-                    if let Some(instance) = natural_shapes.instances
+                    if let Some(instance) = natural_shapes
+                        .instances
                         .iter()
                         .find(|inst| inst.shape_index == shape_idx)
                     {
@@ -305,24 +307,26 @@ impl Hexasphere {
                     }
                 })
                 .collect();
-            
+
             return ShapeInstanceData {
                 shapes: normalized_shapes,
                 instances: natural_shapes.instances,
             };
         }
-        
+
         // Cluster hexagon shapes by radius similarity
-        let hexagon_clusters = self.cluster_hexagons_by_radius(&hexagon_shapes, max_shapes, tolerance);
-        
+        let hexagon_clusters =
+            self.cluster_hexagons_by_radius(&hexagon_shapes, max_shapes, tolerance);
+
         // Build simplified shapes and instances
         let mut simplified_shapes = Vec::new();
         let mut simplified_instances = Vec::new();
-        
+
         // Add all pentagon shapes first (never simplified)
         for (original_idx, _pentagon_shape) in pentagon_shapes {
             // Create normalized pentagon shape
-            if let Some(instance) = natural_shapes.instances
+            if let Some(instance) = natural_shapes
+                .instances
                 .iter()
                 .find(|inst| inst.shape_index == original_idx)
             {
@@ -335,9 +339,9 @@ impl Hexasphere {
             } else {
                 simplified_shapes.push(natural_shapes.shapes[original_idx].clone());
             }
-            
+
             let shape_index = simplified_shapes.len() - 1;
-            
+
             // Find all instances that used this pentagon shape
             for instance in &natural_shapes.instances {
                 if instance.shape_index == original_idx {
@@ -347,11 +351,12 @@ impl Hexasphere {
                 }
             }
         }
-        
+
         // Add clustered hexagon shapes
         for cluster in hexagon_clusters {
             // Create normalized representative shape
-            if let Some(instance) = natural_shapes.instances
+            if let Some(instance) = natural_shapes
+                .instances
                 .iter()
                 .find(|inst| inst.shape_index == cluster.members[0].original_index)
             {
@@ -364,9 +369,9 @@ impl Hexasphere {
             } else {
                 simplified_shapes.push(cluster.representative.clone());
             }
-            
+
             let shape_index = simplified_shapes.len() - 1;
-            
+
             // Add instances for all shapes in this cluster
             for member in &cluster.members {
                 for instance in &natural_shapes.instances {
@@ -378,13 +383,12 @@ impl Hexasphere {
                 }
             }
         }
-        
+
         ShapeInstanceData {
             shapes: simplified_shapes,
             instances: simplified_instances,
         }
     }
-
 
     /// Helper method to cluster hexagon shapes by radius similarity
     fn cluster_hexagons_by_radius(
@@ -611,7 +615,6 @@ impl Hexasphere {
         (uniform_shape, instances)
     }
 }
-
 
 /// A cluster of similar hexagon shapes with a representative
 #[derive(Debug, Clone)]

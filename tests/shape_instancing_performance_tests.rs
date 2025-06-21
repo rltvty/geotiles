@@ -134,7 +134,7 @@ fn test_performance_scaling() {
 #[test]
 fn test_normalized_performance_with_tolerance() {
     println!("\n=== Normalized Shape Performance vs Tolerance ===");
-    
+
     let level = 12;
     let hexasphere = Hexasphere::new(1.0, level, 0.95);
 
@@ -150,7 +150,7 @@ fn test_normalized_performance_with_tolerance() {
         let start = Instant::now();
         let shape_data = hexasphere.get_normalized_shape_instances(target_shapes, tolerance);
         let processing_time = start.elapsed();
-        
+
         let compression = hexasphere.tiles.len() as f64 / shape_data.shapes.len() as f64;
 
         println!(
@@ -172,7 +172,7 @@ fn test_normalized_performance_with_tolerance() {
 #[test]
 fn test_normalized_vs_regular_performance() {
     println!("\n=== Normalized vs Regular Shape Performance ===");
-    
+
     for subdivision in [8, 10, 12] {
         println!("\nSubdivision {}:", subdivision);
 
@@ -205,9 +205,18 @@ fn test_normalized_vs_regular_performance() {
 
         // All methods should be reasonably fast
         let max_acceptable = std::time::Duration::from_millis(100);
-        assert!(regular_time < max_acceptable, "Regular shapes should be fast");
-        assert!(normalized_time < max_acceptable, "Normalized shapes should be fast");
-        assert!(hex_only_time < max_acceptable, "Hexagon-only should be fast");
+        assert!(
+            regular_time < max_acceptable,
+            "Regular shapes should be fast"
+        );
+        assert!(
+            normalized_time < max_acceptable,
+            "Normalized shapes should be fast"
+        );
+        assert!(
+            hex_only_time < max_acceptable,
+            "Hexagon-only should be fast"
+        );
         assert!(uniform_time < max_acceptable, "Uniform should be fast");
     }
 
