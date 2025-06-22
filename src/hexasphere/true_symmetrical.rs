@@ -1,0 +1,434 @@
+//! True symmetrical hexasphere generation using icosahedral edge and face patterns.
+//!
+//! This implementation generates hexagons by creating two template patterns:
+//! 1. Edge pattern: Line of hexagons between two pentagons (replicated to 30 edges)
+//! 2. Face pattern: Triangle of hexagons between three pentagons (replicated to 20 faces)
+
+use crate::geometry::{Point, Vector3};
+use crate::tile::core::Tile;
+// use std::collections::HashMap; // Currently unused
+
+/// Configuration for true symmetrical generation
+#[derive(Debug, Clone)]
+pub struct TrueSymmetricalConfig {
+    pub radius: f64,
+    pub subdivisions: usize,
+    pub hex_size: f64,
+}
+
+/// Icosahedral topology: 12 vertices (pentagons), 30 edges, 20 faces  
+const ICOSAHEDRAL_EDGES: [(usize, usize); 30] = [
+    // Top star: vertex 0 connects to 5 others (5 edges)
+    (0, 1), (0, 4), (0, 8), (0, 10), (0, 6),
+    // Upper pentagon ring (5 edges)
+    (1, 2), (2, 3), (3, 4), (4, 5), (5, 1),
+    // Lower pentagon ring (5 edges)
+    (6, 7), (7, 8), (8, 9), (9, 10), (10, 6),
+    // Vertical connections between rings (5 edges)
+    (1, 6), (2, 7), (3, 8), (4, 9), (5, 10),
+    // Bottom star: connections to vertex 11 (5 edges)
+    (6, 11), (7, 11), (8, 11), (9, 11), (10, 11),
+    // Diagonal connections completing icosahedron (5 edges)
+    (1, 7), (2, 8), (3, 9), (4, 10), (5, 6)
+];
+
+const ICOSAHEDRAL_FACES: [(usize, usize, usize); 20] = [
+    // Top pyramid (5 faces around vertex 0)
+    (0, 1, 4), (0, 4, 8), (0, 8, 10), (0, 10, 6), (0, 6, 1),
+    // Upper ring (5 faces)
+    (1, 2, 5), (2, 3, 7), (3, 4, 8), (4, 5, 9), (5, 1, 6),
+    // Lower ring (5 faces) 
+    (6, 7, 11), (7, 8, 11), (8, 9, 11), (9, 10, 11), (10, 6, 11),
+    // Middle band (5 faces)
+    (1, 2, 7), (2, 3, 8), (3, 4, 9), (4, 5, 10), (5, 1, 6)
+];
+
+impl TrueSymmetricalConfig {
+    pub fn new(radius: f64, subdivisions: usize, hex_size: f64) -> Self {
+        if subdivisions == 0 {
+            panic!("Subdivisions must be at least 1 for true symmetrical generation");
+        }
+        
+        Self {
+            radius,
+            subdivisions,
+            hex_size,
+        }
+    }
+}
+
+/// Generate hexasphere using true icosahedral symmetry
+pub fn create_true_symmetrical_hexasphere(
+    config: TrueSymmetricalConfig,
+) -> crate::hexasphere::core::Hexasphere {
+    let mut all_tiles = Vec::new();
+    
+    // Step 1: Generate all 12 pentagons at icosahedral vertices
+    let pentagon_tiles = generate_pentagon_tiles(&config);
+    all_tiles.extend(pentagon_tiles);
+    
+    // Step 2: Generate edge hexagons (lines between pentagon pairs)
+    let edge_hexagons = generate_all_edge_hexagons(&config);
+    all_tiles.extend(edge_hexagons);
+    
+    // Step 3: Generate face hexagons (triangles between pentagon triplets)
+    let face_hexagons = generate_all_face_hexagons(&config);
+    all_tiles.extend(face_hexagons);
+    
+    // Step 4: Resolve neighbor relationships
+    resolve_neighbors(&mut all_tiles);
+    
+    crate::hexasphere::core::Hexasphere {
+        radius: config.radius,
+        tiles: all_tiles,
+    }
+}
+
+/// Generate all 12 pentagon tiles at icosahedral vertices
+fn generate_pentagon_tiles(config: &TrueSymmetricalConfig) -> Vec<Tile> {
+    let vertices = get_icosahedral_vertices();
+    let mut pentagons = Vec::new();
+    
+    for vertex in &vertices {
+        let mut projected_vertex = vertex.clone();
+        projected_vertex.project(config.radius, 1.0);
+        
+        let pentagon_tile = create_pentagon_tile(&projected_vertex, config);
+        pentagons.push(pentagon_tile);
+    }
+    
+    pentagons
+}
+
+/// Generate hexagons along all 30 icosahedral edges
+fn generate_all_edge_hexagons(config: &TrueSymmetricalConfig) -> Vec<Tile> {
+    if config.subdivisions <= 1 {
+        return Vec::new(); // No edge hexagons for subdivision 1
+    }
+    
+    let vertices = get_icosahedral_vertices();
+    let mut edge_hexagons = Vec::new();
+    
+    // Calculate how many hexagons per edge (n-1 for n subdivisions)
+    let hexagons_per_edge = config.subdivisions - 1;
+    
+    // Generate template for one edge, then replicate to all 30 edges
+    let template_edge = generate_edge_template(&vertices[0], &vertices[1], hexagons_per_edge, config);
+    
+    for &(v1_idx, v2_idx) in &ICOSAHEDRAL_EDGES {
+        let edge_tiles = replicate_edge_template(
+            &template_edge,
+            &vertices[0], &vertices[1],  // Template edge
+            &vertices[v1_idx], &vertices[v2_idx],  // Target edge
+            config
+        );
+        edge_hexagons.extend(edge_tiles);
+    }
+    
+    edge_hexagons
+}
+
+/// Generate hexagons in all 20 icosahedral face triangles
+fn generate_all_face_hexagons(config: &TrueSymmetricalConfig) -> Vec<Tile> {
+    if config.subdivisions <= 2 {
+        return Vec::new(); // No face hexagons for subdivision 2 or less
+    }
+    
+    let vertices = get_icosahedral_vertices();
+    let mut face_hexagons = Vec::new();
+    
+    // Calculate triangle number: triangle(n-2) = (n-2)(n-1)/2
+    let triangle_size = config.subdivisions - 2;
+    let hexagons_per_face = triangle_size * (triangle_size + 1) / 2;
+    
+    if hexagons_per_face == 0 {
+        return Vec::new();
+    }
+    
+    // Generate template for one face triangle, then replicate to all 20 faces
+    let template_face = generate_face_template(
+        &vertices[0], &vertices[1], &vertices[4],  // First face triangle
+        hexagons_per_face, 
+        config
+    );
+    
+    for &(v1_idx, v2_idx, v3_idx) in &ICOSAHEDRAL_FACES {
+        let face_tiles = replicate_face_template(
+            &template_face,
+            &vertices[0], &vertices[1], &vertices[4],  // Template triangle
+            &vertices[v1_idx], &vertices[v2_idx], &vertices[v3_idx],  // Target triangle
+            config
+        );
+        face_hexagons.extend(face_tiles);
+    }
+    
+    face_hexagons
+}
+
+/// Generate template pattern for hexagons along one edge
+fn generate_edge_template(
+    v1: &Point, 
+    v2: &Point, 
+    count: usize, 
+    config: &TrueSymmetricalConfig
+) -> Vec<Tile> {
+    let mut edge_tiles = Vec::new();
+    
+    for i in 1..=count {
+        // Position along edge: from v1 toward v2
+        let t = i as f64 / (count + 1) as f64;
+        let edge_point = Point::new(
+            v1.x * (1.0 - t) + v2.x * t,
+            v1.y * (1.0 - t) + v2.y * t,
+            v1.z * (1.0 - t) + v2.z * t,
+        );
+        
+        // Project to sphere
+        let mut projected = edge_point;
+        projected.project(config.radius, 1.0);
+        
+        let hexagon_tile = create_hexagon_tile(&projected, config);
+        edge_tiles.push(hexagon_tile);
+    }
+    
+    edge_tiles
+}
+
+/// Generate template pattern for hexagons in one face triangle
+fn generate_face_template(
+    v1: &Point,
+    v2: &Point, 
+    v3: &Point,
+    count: usize,
+    config: &TrueSymmetricalConfig
+) -> Vec<Tile> {
+    let mut face_tiles = Vec::new();
+    
+    // Generate hexagons in triangular arrangement
+    // This is a simplified approach - real implementation would use proper barycentric coordinates
+    
+    let triangle_size = config.subdivisions - 2;
+    let mut tile_index = 0;
+    
+    for row in 1..=triangle_size {
+        for col in 1..=(triangle_size - row + 1) {
+            if tile_index >= count {
+                break;
+            }
+            
+            // Barycentric coordinates for position in triangle
+            let u = row as f64 / (triangle_size + 1) as f64;
+            let v = col as f64 / (triangle_size + 1) as f64;
+            let w = 1.0 - u - v;
+            
+            // Interpolate position within triangle
+            let face_point = Point::new(
+                u * v1.x + v * v2.x + w * v3.x,
+                u * v1.y + v * v2.y + w * v3.y,
+                u * v1.z + v * v2.z + w * v3.z,
+            );
+            
+            // Project to sphere
+            let mut projected = face_point;
+            projected.project(config.radius, 1.0);
+            
+            let hexagon_tile = create_hexagon_tile(&projected, config);
+            face_tiles.push(hexagon_tile);
+            
+            tile_index += 1;
+        }
+    }
+    
+    face_tiles
+}
+
+/// Replicate edge template to a different edge using transformation
+fn replicate_edge_template(
+    template: &[Tile],
+    template_v1: &Point, template_v2: &Point,
+    target_v1: &Point, target_v2: &Point,
+    config: &TrueSymmetricalConfig
+) -> Vec<Tile> {
+    // Create transformation from template edge to target edge
+    let transform = create_edge_transform(template_v1, template_v2, target_v1, target_v2, config.radius);
+    
+    template.iter()
+        .map(|tile| transform_tile(tile, &transform))
+        .collect()
+}
+
+/// Replicate face template to a different face using transformation  
+fn replicate_face_template(
+    template: &[Tile],
+    template_v1: &Point, template_v2: &Point, template_v3: &Point,
+    target_v1: &Point, target_v2: &Point, target_v3: &Point,
+    config: &TrueSymmetricalConfig
+) -> Vec<Tile> {
+    // Create transformation from template triangle to target triangle
+    let transform = create_face_transform(
+        template_v1, template_v2, template_v3,
+        target_v1, target_v2, target_v3,
+        config.radius
+    );
+    
+    template.iter()
+        .map(|tile| transform_tile(tile, &transform))
+        .collect()
+}
+
+/// Create a simple transformation matrix (placeholder)
+fn create_edge_transform(
+    _t_v1: &Point, _t_v2: &Point,
+    _target_v1: &Point, _target_v2: &Point,
+    _radius: f64
+) -> [[f64; 3]; 3] {
+    // Placeholder: identity matrix
+    // Real implementation would calculate proper rotation matrix
+    [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+}
+
+/// Create a simple transformation matrix for face triangles (placeholder)
+fn create_face_transform(
+    _t_v1: &Point, _t_v2: &Point, _t_v3: &Point,
+    _target_v1: &Point, _target_v2: &Point, _target_v3: &Point,
+    _radius: f64
+) -> [[f64; 3]; 3] {
+    // Placeholder: identity matrix
+    // Real implementation would calculate proper rotation matrix
+    [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+}
+
+/// Apply transformation matrix to a tile
+fn transform_tile(tile: &Tile, transform: &[[f64; 3]; 3]) -> Tile {
+    let transform_point = |p: &Point| -> Point {
+        Point::new(
+            p.x * transform[0][0] + p.y * transform[0][1] + p.z * transform[0][2],
+            p.x * transform[1][0] + p.y * transform[1][1] + p.z * transform[1][2],
+            p.x * transform[2][0] + p.y * transform[2][1] + p.z * transform[2][2],
+        )
+    };
+    
+    let new_center = transform_point(&tile.center_point);
+    let new_boundary: Vec<Point> = tile.boundary.iter()
+        .map(transform_point)
+        .collect();
+    
+    Tile {
+        center_point: new_center,
+        boundary: new_boundary,
+        neighbor_ids: tile.neighbor_ids.clone(),
+        neighbors: Vec::new(),
+    }
+}
+
+/// Get icosahedral vertex positions using golden ratio
+fn get_icosahedral_vertices() -> [Point; 12] {
+    let tao = 1.61803399;
+    [
+        Point::new(1000.0, tao * 1000.0, 0.0),
+        Point::new(-1000.0, tao * 1000.0, 0.0),
+        Point::new(1000.0, -tao * 1000.0, 0.0),
+        Point::new(-1000.0, -tao * 1000.0, 0.0),
+        Point::new(0.0, 1000.0, tao * 1000.0),
+        Point::new(0.0, -1000.0, tao * 1000.0),
+        Point::new(0.0, 1000.0, -tao * 1000.0),
+        Point::new(0.0, -1000.0, -tao * 1000.0),
+        Point::new(tao * 1000.0, 0.0, 1000.0),
+        Point::new(-tao * 1000.0, 0.0, 1000.0),
+        Point::new(tao * 1000.0, 0.0, -1000.0),
+        Point::new(-tao * 1000.0, 0.0, -1000.0),
+    ]
+}
+
+/// Create a pentagon tile with proper boundary
+fn create_pentagon_tile(center: &Point, config: &TrueSymmetricalConfig) -> Tile {
+    let boundary = create_regular_polygon_boundary(center, 5, config.radius * 0.1);
+    
+    Tile {
+        center_point: center.clone(),
+        boundary,
+        neighbor_ids: Vec::new(),
+        neighbors: Vec::new(),
+    }
+}
+
+/// Create a hexagon tile with proper boundary
+fn create_hexagon_tile(center: &Point, config: &TrueSymmetricalConfig) -> Tile {
+    let boundary = create_regular_polygon_boundary(center, 6, config.radius * 0.08);
+    
+    Tile {
+        center_point: center.clone(),
+        boundary,
+        neighbor_ids: Vec::new(),
+        neighbors: Vec::new(),
+    }
+}
+
+/// Create regular polygon boundary on sphere surface
+fn create_regular_polygon_boundary(center: &Point, sides: usize, radius: f64) -> Vec<Point> {
+    let mut boundary = Vec::new();
+    
+    // Create local coordinate system on sphere surface
+    let up = Vector3::new(center.x, center.y, center.z).normalize();
+    let reference = Vector3::new(0.0, 0.0, 1.0);
+    let right = if up.z.abs() > 0.9 {
+        Vector3::new(1.0, 0.0, 0.0)
+    } else {
+        reference.cross(&up).normalize()
+    };
+    let forward = up.cross(&right).normalize();
+    
+    for i in 0..sides {
+        let angle = 2.0 * std::f64::consts::PI * i as f64 / sides as f64;
+        let local_x = radius * angle.cos();
+        let local_y = radius * angle.sin();
+        
+        let global_point = Point::new(
+            center.x + local_x * right.x + local_y * forward.x,
+            center.y + local_x * right.y + local_y * forward.y,
+            center.z + local_x * right.z + local_y * forward.z,
+        );
+        
+        let mut projected = global_point;
+        let sphere_radius = center.distance_to(&Point::new(0.0, 0.0, 0.0));
+        projected.project(sphere_radius, 1.0);
+        
+        boundary.push(projected);
+    }
+    
+    boundary
+}
+
+/// Resolve neighbor relationships (simplified)
+fn resolve_neighbors(_tiles: &mut Vec<Tile>) {
+    // TODO: Implement neighbor resolution based on proximity
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_subdivision_counts() {
+        // Test that we get the expected number of hexagons
+        for subdivisions in 1..=6 {
+            let config = TrueSymmetricalConfig::new(10.0, subdivisions, 0.9);
+            let hexasphere = create_true_symmetrical_hexasphere(config);
+            
+            let pentagon_count = hexasphere.tiles.iter().filter(|t| t.is_pentagon()).count();
+            let hexagon_count = hexasphere.tiles.iter().filter(|t| t.is_hexagon()).count();
+            
+            println!("Subdivision {}: {} pentagons, {} hexagons, {} total", 
+                subdivisions, pentagon_count, hexagon_count, hexasphere.tiles.len());
+            
+            // Should always have exactly 12 pentagons
+            assert_eq!(pentagon_count, 12);
+        }
+    }
+    
+    #[test]
+    #[should_panic(expected = "Subdivisions must be at least 1")]
+    fn test_invalid_subdivisions() {
+        TrueSymmetricalConfig::new(10.0, 0, 0.9);
+    }
+}

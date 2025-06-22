@@ -55,11 +55,15 @@ fn get_icosahedron_vertices() -> [Point; 12] {
 impl SymmetricalConfig {
     pub fn new(radius: f64, subdivisions: usize, hex_size: f64) -> Self {
         // Calculate appropriate ring count based on subdivision level
+        // The number of rings should scale exponentially with subdivisions
         let pentagon_rings = match subdivisions {
-            0 => 1,                    // Just the pentagon itself
-            1 => 2,                    // Pentagon + immediate neighbors
-            2 => 3,                    // Pentagon + 2 rings of neighbors
-            _ => 4 + subdivisions / 2, // Scale with subdivision
+            0 => 0,                                    // Just the pentagon itself
+            1 => 1,                                    // Pentagon + 1 ring (5 hexagons)
+            2 => 2,                                    // Pentagon + 2 rings (5 + 10 = 15 hexagons)
+            3 => 3, // Pentagon + 3 rings (5 + 10 + 15 = 30 hexagons)
+            4 => 5, // Pentagon + 5 rings
+            5 => 8, // Pentagon + 8 rings
+            _ => 2_usize.pow(subdivisions as u32 - 3), // Exponential scaling for high subdivisions
         };
 
         Self {
@@ -143,37 +147,105 @@ impl PentagonTransform {
 pub fn create_symmetrical_hexasphere(
     config: SymmetricalConfig,
 ) -> crate::hexasphere::core::Hexasphere {
-    // Step 1: Generate the pattern around the first pentagon
-    let reference_pentagon = get_projected_vertex(0, config.radius);
-    let pentagon_pattern = generate_pentagon_pattern(&reference_pentagon, &config);
+    // Step 1: Generate a reference hexasphere to understand the pattern
+    let reference_hexasphere = crate::hexasphere::core::Hexasphere::new(
+        config.radius,
+        config.subdivisions,
+        config.hex_size,
+    );
 
-    // Step 2: Create transformations for all 12 pentagon positions
+    // Step 2: Identify pentagon regions (Voronoi cells around each pentagon)
+    let pentagon_regions = identify_pentagon_regions(&reference_hexasphere);
+
+    // Step 3: Extract the first pentagon's region as the template
+    if pentagon_regions.is_empty() {
+        return reference_hexasphere; // Fallback
+    }
+
+    let template_region = &pentagon_regions[0];
+    let template_tiles: Vec<_> = template_region
+        .iter()
+        .map(|&idx| reference_hexasphere.tiles[idx].clone())
+        .collect();
+
+    // Step 4: Create transformations for all 12 pentagon positions
     let transforms = create_pentagon_transforms(config.radius);
 
-    // Step 3: Replicate the pattern to all pentagon positions
+    // Step 5: Replicate the template to all 12 positions
     let mut all_tiles = Vec::new();
     let mut tile_map: HashMap<String, usize> = HashMap::new();
 
-    for (_i, transform) in transforms.iter().enumerate() {
-        for tile in &pentagon_pattern {
+    for transform in &transforms {
+        for tile in &template_tiles {
             let transformed_tile = transform.transform_tile(tile);
-            let tile_id = transformed_tile.to_string();
+            let _tile_id = transformed_tile.to_string();
 
-            // Avoid duplicates (tiles that appear in multiple patterns)
-            if !tile_map.contains_key(&tile_id) {
-                tile_map.insert(tile_id, all_tiles.len());
+            // Use a precision-based key to handle floating point rounding
+            let rounded_key = format!(
+                "{:.6},{:.6},{:.6}",
+                transformed_tile.center_point.x,
+                transformed_tile.center_point.y,
+                transformed_tile.center_point.z
+            );
+
+            // Avoid duplicates at region boundaries
+            if !tile_map.contains_key(&rounded_key) {
+                tile_map.insert(rounded_key, all_tiles.len());
                 all_tiles.push(transformed_tile);
             }
         }
     }
 
-    // Step 4: Resolve neighbor relationships
+    // Step 6: Resolve neighbor relationships
     resolve_neighbors(&mut all_tiles);
 
     crate::hexasphere::core::Hexasphere {
         radius: config.radius,
         tiles: all_tiles,
     }
+}
+
+/// Identify which tiles belong to each pentagon's region of influence
+fn identify_pentagon_regions(hexasphere: &crate::hexasphere::core::Hexasphere) -> Vec<Vec<usize>> {
+    // Find all pentagon positions
+    let pentagon_indices: Vec<usize> = hexasphere
+        .tiles
+        .iter()
+        .enumerate()
+        .filter_map(|(i, tile)| if tile.is_pentagon() { Some(i) } else { None })
+        .collect();
+
+    let mut regions = Vec::new();
+
+    // For each pentagon, find tiles that are closer to it than to any other pentagon
+    for &pentagon_idx in &pentagon_indices {
+        let pentagon_center = &hexasphere.tiles[pentagon_idx].center_point;
+        let mut region = Vec::new();
+
+        for (tile_idx, tile) in hexasphere.tiles.iter().enumerate() {
+            // Calculate distance to this pentagon
+            let dist_to_this_pentagon = pentagon_center.distance_to(&tile.center_point);
+
+            // Check if this is the closest pentagon
+            let is_closest = pentagon_indices.iter().all(|&other_pentagon_idx| {
+                if other_pentagon_idx == pentagon_idx {
+                    true // Same pentagon
+                } else {
+                    let other_pentagon_center = &hexasphere.tiles[other_pentagon_idx].center_point;
+                    let dist_to_other = other_pentagon_center.distance_to(&tile.center_point);
+                    dist_to_this_pentagon <= dist_to_other
+                }
+            });
+
+            if is_closest {
+                region.push(tile_idx);
+            }
+        }
+
+        regions.push(region);
+    }
+
+    regions
 }
 
 /// Generate the tile pattern around a single pentagon using subdivision approach
@@ -194,29 +266,40 @@ fn generate_localized_tiles(center: &Point, config: &SymmetricalConfig) -> Vec<T
     let pentagon_tile = create_pentagon_tile(center, config);
     tiles.push(pentagon_tile);
 
-    // For higher subdivision levels, add neighboring hexagons
-    if config.subdivisions > 0 {
-        let hexagon_tiles = create_neighboring_hexagons(center, config);
-        tiles.extend(hexagon_tiles);
+    // Generate multiple rings of hexagons based on subdivision level
+    for ring in 1..=config.pentagon_rings {
+        let ring_tiles = create_hexagon_ring(center, ring, config);
+        tiles.extend(ring_tiles);
     }
 
     tiles
 }
 
-/// Create neighboring hexagons around a pentagon center
-fn create_neighboring_hexagons(pentagon_center: &Point, config: &SymmetricalConfig) -> Vec<Tile> {
+/// Create a ring of hexagons around a pentagon center
+fn create_hexagon_ring(
+    pentagon_center: &Point,
+    ring: usize,
+    config: &SymmetricalConfig,
+) -> Vec<Tile> {
     let mut hexagons = Vec::new();
 
-    // Calculate positions for 5 hexagons around the pentagon
-    // This is a simplified geometric calculation
-    let hex_distance = config.radius * 0.2; // Approximate distance based on icosahedral geometry
+    // Calculate the number of hexagons in this ring
+    // Ring 1: 5 hexagons (immediate neighbors)
+    // Ring 2: 10 hexagons
+    // Ring 3: 15 hexagons
+    // etc. - each ring has 5 more hexagons than the previous
+    let hexagons_in_ring = 5 * ring;
 
-    for i in 0..5 {
-        let angle = 2.0 * std::f64::consts::PI * i as f64 / 5.0;
+    // Calculate distance from pentagon center based on ring
+    let base_distance = config.radius * 0.15; // Base distance for ring 1
+    let ring_distance = base_distance * ring as f64;
+
+    for i in 0..hexagons_in_ring {
+        let angle = 2.0 * std::f64::consts::PI * i as f64 / hexagons_in_ring as f64;
 
         // Create a hexagon center relative to pentagon
         let hex_center =
-            create_hexagon_center_around_pentagon(pentagon_center, angle, hex_distance);
+            create_hexagon_center_around_pentagon(pentagon_center, angle, ring_distance);
         let hexagon_tile = create_hexagon_tile(&hex_center, config);
         hexagons.push(hexagon_tile);
     }
@@ -324,24 +407,41 @@ fn create_pentagon_tile(center: &Point, config: &SymmetricalConfig) -> Tile {
     }
 }
 
-/// Create pentagon boundary points (5-sided polygon)
+/// Create pentagon boundary points (5-sided polygon) using proper spherical geometry
 fn create_pentagon_boundary(center: &Point, radius: f64) -> Vec<Point> {
     let mut boundary = Vec::new();
 
-    // Create 5 points around the pentagon center
+    // Create proper local coordinate system on the sphere surface
+    let up = Vector3::new(center.x, center.y, center.z).normalize();
+
+    // Create two perpendicular vectors in the tangent plane
+    let reference = Vector3::new(0.0, 0.0, 1.0);
+    let right = if up.z.abs() > 0.9 {
+        Vector3::new(1.0, 0.0, 0.0)
+    } else {
+        reference.cross(&up).normalize()
+    };
+    let forward = up.cross(&right).normalize();
+
+    // Create 5 points around the pentagon center using proper 3D geometry
     for i in 0..5 {
         let angle = 2.0 * std::f64::consts::PI * i as f64 / 5.0;
 
-        // Create a local coordinate system for the pentagon
+        // Calculate position in the tangent plane
         let local_x = radius * angle.cos();
         let local_y = radius * angle.sin();
 
-        // Transform to global coordinates (this is simplified)
-        let global_point = Point::new(center.x + local_x, center.y + local_y, center.z);
+        // Transform to global coordinates using the local coordinate system
+        let global_point = Point::new(
+            center.x + local_x * right.x + local_y * forward.x,
+            center.y + local_x * right.y + local_y * forward.y,
+            center.z + local_x * right.z + local_y * forward.z,
+        );
 
-        // Project to sphere surface
+        // Project to sphere surface maintaining the proper radius
         let mut projected = global_point;
-        projected.project(center.distance_to(&Point::new(0.0, 0.0, 0.0)), 1.0);
+        let sphere_radius = center.distance_to(&Point::new(0.0, 0.0, 0.0));
+        projected.project(sphere_radius, 1.0);
 
         boundary.push(projected);
     }
