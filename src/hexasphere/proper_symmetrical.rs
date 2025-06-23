@@ -240,8 +240,10 @@ fn convert_faces_to_tiles(faces: &[Face], config: &ProperSymmetricalConfig) -> V
 fn extract_edge_tiles_from_face(face_tiles: &[Tile], v1: &Point, v2: &Point) -> Vec<Tile> {
     let mut edge_tiles = Vec::new();
     
-    // Calculate edge direction
-    let edge_dir = Vector3::new(v2.x - v1.x, v2.y - v1.y, v2.z - v1.z).normalize();
+    // Calculate edge vector and length
+    let edge_vec = Vector3::new(v2.x - v1.x, v2.y - v1.y, v2.z - v1.z);
+    let edge_length = edge_vec.magnitude();
+    let edge_dir = edge_vec.normalize();
     
     for tile in face_tiles {
         // Check if tile center is close to the edge line
@@ -260,12 +262,17 @@ fn extract_edge_tiles_from_face(face_tiles: &[Tile], v1: &Point, v2: &Point) -> 
         );
         
         // Calculate distance from tile to edge line
-        let distance_to_edge = (to_tile.x - projection.x).powi(2) + 
-                              (to_tile.y - projection.y).powi(2) + 
-                              (to_tile.z - projection.z).powi(2);
+        let distance_vec = Vector3::new(
+            to_tile.x - projection.x,
+            to_tile.y - projection.y,
+            to_tile.z - projection.z
+        );
+        let distance_to_edge = distance_vec.magnitude();
         
         // If close to edge and between v1 and v2, include it
-        if distance_to_edge < 0.1 && projection_length > 0.0 && projection_length < edge_dir.magnitude() {
+        let tolerance = edge_length * 0.2; // More generous tolerance
+        let margin = edge_length * 0.1; // Margin beyond endpoints
+        if distance_to_edge < tolerance && projection_length > -margin && projection_length < (edge_length + margin) {
             edge_tiles.push(tile.clone());
         }
     }
@@ -281,9 +288,9 @@ fn extract_interior_tiles_from_face(face_tiles: &[Tile], v1: &Point, v2: &Point,
         // Check if tile is interior using barycentric coordinates
         let barycentric = calculate_barycentric_coordinates(&tile.center_point, v1, v2, v3);
         
-        // If all coordinates are positive and away from edges, it's interior
+        // If all coordinates are positive and away from edges, it's interior  
         let min_coord = barycentric.0.min(barycentric.1).min(barycentric.2);
-        if min_coord > 0.1 { // Away from edges
+        if min_coord > 0.05 { // More generous interior threshold
             interior_tiles.push(tile.clone());
         }
     }
@@ -291,14 +298,26 @@ fn extract_interior_tiles_from_face(face_tiles: &[Tile], v1: &Point, v2: &Point,
     interior_tiles
 }
 
-/// Calculate barycentric coordinates of a point relative to a triangle
+/// Calculate barycentric coordinates of a point relative to a triangle in 3D
 fn calculate_barycentric_coordinates(p: &Point, v1: &Point, v2: &Point, v3: &Point) -> (f64, f64, f64) {
-    // Simplified barycentric calculation
-    let denom = (v2.y - v3.y) * (v1.x - v3.x) + (v3.x - v2.x) * (v1.y - v3.y);
-    let a = ((v2.y - v3.y) * (p.x - v3.x) + (v3.x - v2.x) * (p.y - v3.y)) / denom;
-    let b = ((v3.y - v1.y) * (p.x - v3.x) + (v1.x - v3.x) * (p.y - v3.y)) / denom;
-    let c = 1.0 - a - b;
-    (a, b, c)
+    // Calculate triangle edges
+    let v0 = Vector3::new(v2.x - v1.x, v2.y - v1.y, v2.z - v1.z);
+    let v1_vec = Vector3::new(v3.x - v1.x, v3.y - v1.y, v3.z - v1.z);
+    let v2_vec = Vector3::new(p.x - v1.x, p.y - v1.y, p.z - v1.z);
+    
+    // Calculate dot products
+    let dot00 = v0.dot(&v0);
+    let dot01 = v0.dot(&v1_vec);
+    let dot02 = v0.dot(&v2_vec);
+    let dot11 = v1_vec.dot(&v1_vec);
+    let dot12 = v1_vec.dot(&v2_vec);
+    
+    // Calculate barycentric coordinates
+    let inv_denom = 1.0 / (dot00 * dot11 - dot01 * dot01);
+    let u = (dot11 * dot02 - dot01 * dot12) * inv_denom;
+    let v = (dot00 * dot12 - dot01 * dot02) * inv_denom;
+    
+    (1.0 - u - v, u, v)
 }
 
 /// Calculate proper rotation matrix to transform one edge to another
@@ -448,16 +467,21 @@ fn apply_proper_transform_to_tile(tile: &Tile, transform: &[[f64; 3]; 3]) -> Til
 
 /// Deduplicate tiles that appear at pattern boundaries
 fn deduplicate_boundary_tiles(tiles: Vec<Tile>) -> Vec<Tile> {
-    let mut unique_tiles = Vec::new();
-    let mut seen_positions: HashMap<String, usize> = HashMap::new();
+    let mut unique_tiles: Vec<Tile> = Vec::new();
     
     for tile in tiles {
-        // Create position key with moderate precision to handle floating point errors
-        let position_key = format!("{:.4},{:.4},{:.4}", 
-            tile.center_point.x, tile.center_point.y, tile.center_point.z);
+        let mut is_duplicate = false;
         
-        if !seen_positions.contains_key(&position_key) {
-            seen_positions.insert(position_key, unique_tiles.len());
+        // Check against existing tiles for proximity
+        for existing_tile in &unique_tiles {
+            let distance = tile.center_point.distance_to(&existing_tile.center_point);
+            if distance < 0.1 { // Tiles are considered duplicates if centers are very close
+                is_duplicate = true;
+                break;
+            }
+        }
+        
+        if !is_duplicate {
             unique_tiles.push(tile);
         }
     }

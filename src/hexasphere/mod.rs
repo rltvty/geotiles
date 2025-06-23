@@ -19,4 +19,5 @@ pub use statistics::HexagonStats;
 pub use symmetrical::{create_symmetrical_hexasphere, SymmetricalConfig};
 pub use true_symmetrical::{create_true_symmetrical_hexasphere, TrueSymmetricalConfig};
 pub use minimal_symmetrical::{create_minimal_symmetrical_hexasphere, MinimalSymmetricalConfig};
+pub use proper_symmetrical::{create_proper_symmetrical_hexasphere, ProperSymmetricalConfig};
 pub use simple_proper_symmetrical::{create_simple_proper_symmetrical_hexasphere, SimpleProperSymmetricalConfig};
