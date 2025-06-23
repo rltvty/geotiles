@@ -38,11 +38,11 @@ pub fn create_working_proper_symmetrical_hexasphere(
         // For subdivision 1, only pentagons - use simple symmetrical approach
         create_pentagons_only_symmetrical(&config)
     } else if config.subdivisions == 2 {
-        // For subdivision 2, implement edge patterns (30 hexagons)
-        create_edge_patterns_symmetrical(&config)
+        // For subdivision 2, implement edge patterns only (30 hexagons)
+        create_edge_patterns_only_symmetrical(&config)
     } else {
-        // For higher subdivisions, fall back to original until we implement face patterns
-        create_fallback_to_original(&config)
+        // For subdivision 3+, implement edge patterns + fall back to original for face patterns
+        create_edge_patterns_with_fallback(&config)
     }
 }
 
@@ -65,8 +65,8 @@ fn create_pentagons_only_symmetrical(config: &WorkingProperSymmetricalConfig) ->
     }
 }
 
-/// Create hexasphere with edge patterns (subdivision 2: 12 pentagons + 30 hexagons)
-fn create_edge_patterns_symmetrical(config: &WorkingProperSymmetricalConfig) -> crate::hexasphere::core::Hexasphere {
+/// Create hexasphere with edge patterns only (subdivision 2: 12 pentagons + 30 hexagons)
+fn create_edge_patterns_only_symmetrical(config: &WorkingProperSymmetricalConfig) -> crate::hexasphere::core::Hexasphere {
     let mut all_tiles = Vec::new();
     
     // Step 1: Generate the 12 pentagon tiles at icosahedral vertices
@@ -91,15 +91,57 @@ fn create_edge_patterns_symmetrical(config: &WorkingProperSymmetricalConfig) -> 
     }
 }
 
-/// Generate edge hexagons using icosahedral symmetry
+/// Create hexasphere with edge patterns + fallback for face patterns (subdivision 3+)
+fn create_edge_patterns_with_fallback(config: &WorkingProperSymmetricalConfig) -> crate::hexasphere::core::Hexasphere {
+    let mut all_tiles = Vec::new();
+    
+    // Step 1: Generate the 12 pentagon tiles using symmetrical approach
+    let vertices = get_icosahedral_vertices();
+    for vertex in &vertices {
+        let mut projected_vertex = vertex.clone();
+        projected_vertex.project(config.radius, 1.0);
+        let pentagon_tile = create_pentagon_tile(&projected_vertex, config.hex_size);
+        all_tiles.push(pentagon_tile);
+    }
+    
+    // Step 2: Generate edge hexagons using generalized symmetrical approach
+    let edge_tiles = generate_edge_hexagons_generalized(&config, &vertices);
+    all_tiles.extend(edge_tiles);
+    
+    // Step 3: For face hexagons, fall back to original approach for now
+    // Calculate expected face hexagon count
+    let expected_face_hexagons = if config.subdivisions > 2 {
+        let triangle_size = config.subdivisions - 2;
+        20 * triangle_size * (triangle_size + 1) / 2
+    } else {
+        0
+    };
+    
+    if expected_face_hexagons > 0 {
+        // Generate face hexagons using original approach and extract them
+        let original = crate::hexasphere::core::Hexasphere::new(config.radius, config.subdivisions, config.hex_size);
+        
+        // Extract face hexagons (those that aren't pentagons or edge hexagons)
+        let face_tiles = extract_face_hexagons_from_original(&original, &all_tiles);
+        all_tiles.extend(face_tiles);
+    }
+    
+    // Step 4: Resolve neighbors (simplified for now)
+    resolve_neighbors(&mut all_tiles);
+    
+    crate::hexasphere::core::Hexasphere {
+        radius: config.radius,
+        tiles: all_tiles,
+    }
+}
+
+/// Generate edge hexagons using generalized icosahedral symmetry (works for all subdivision levels)
 fn generate_edge_hexagons_symmetrical(
     config: &WorkingProperSymmetricalConfig,
     vertices: &[Point; 12]
 ) -> Vec<Tile> {
+    // For subdivision 2 only, use simple midpoint approach
     let mut edge_tiles = Vec::new();
-    
-    // For subdivision 2, we need exactly 1 hexagon between each pair of connected pentagons
-    // There are 30 icosahedral edges, so we need 30 hexagons total
     
     for &(v1_idx, v2_idx) in &ICOSAHEDRAL_EDGES {
         let v1 = &vertices[v1_idx];
@@ -122,6 +164,77 @@ fn generate_edge_hexagons_symmetrical(
     }
     
     edge_tiles
+}
+
+/// Generate edge hexagons using generalized icosahedral symmetry (works for all subdivision levels)
+fn generate_edge_hexagons_generalized(
+    config: &WorkingProperSymmetricalConfig,
+    vertices: &[Point; 12]
+) -> Vec<Tile> {
+    let mut edge_tiles = Vec::new();
+    
+    // For subdivision n, we need (n-1) hexagons between each pair of connected pentagons
+    // There are 30 icosahedral edges, so we need 30 * (n-1) total edge hexagons
+    let hexagons_per_edge = config.subdivisions - 1;
+    
+    if hexagons_per_edge == 0 {
+        return edge_tiles; // No edge hexagons for subdivision 1
+    }
+    
+    for &(v1_idx, v2_idx) in &ICOSAHEDRAL_EDGES {
+        let v1 = &vertices[v1_idx];
+        let v2 = &vertices[v2_idx];
+        
+        // Place (subdivisions-1) hexagons evenly spaced along this edge
+        for i in 1..=hexagons_per_edge {
+            let t = i as f64 / (hexagons_per_edge + 1) as f64;
+            let edge_point = Point::new(
+                v1.x * (1.0 - t) + v2.x * t,
+                v1.y * (1.0 - t) + v2.y * t,
+                v1.z * (1.0 - t) + v2.z * t,
+            );
+            
+            // Project to sphere surface
+            let mut projected_point = edge_point;
+            projected_point.project(config.radius, 1.0);
+            
+            // Create hexagon tile at this position
+            let hex_tile = create_hexagon_tile(&projected_point, config.hex_size);
+            edge_tiles.push(hex_tile);
+        }
+    }
+    
+    edge_tiles
+}
+
+/// Extract face hexagons from original implementation (those not already generated symmetrically)
+fn extract_face_hexagons_from_original(
+    original: &crate::hexasphere::core::Hexasphere,
+    symmetrical_tiles: &[Tile]
+) -> Vec<Tile> {
+    let mut face_tiles = Vec::new();
+    
+    // Find hexagons in original that don't match any of our symmetrical tiles
+    for original_tile in &original.tiles {
+        if original_tile.is_hexagon() {
+            let mut is_already_generated = false;
+            
+            // Check if this hexagon is close to any of our symmetrical tiles
+            for sym_tile in symmetrical_tiles {
+                let distance = original_tile.center_point.distance_to(&sym_tile.center_point);
+                if distance < 0.1 {
+                    is_already_generated = true;
+                    break;
+                }
+            }
+            
+            if !is_already_generated {
+                face_tiles.push(original_tile.clone());
+            }
+        }
+    }
+    
+    face_tiles
 }
 
 /// Create a hexagon tile
