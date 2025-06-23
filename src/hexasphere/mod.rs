@@ -10,6 +10,7 @@ pub mod true_symmetrical;
 pub mod minimal_symmetrical;
 pub mod proper_symmetrical;
 pub mod simple_proper_symmetrical;
+pub mod working_proper_symmetrical;
 pub mod common_icosahedral;
 
 pub use core::Hexasphere;
@@ -21,3 +22,4 @@ pub use true_symmetrical::{create_true_symmetrical_hexasphere, TrueSymmetricalCo
 pub use minimal_symmetrical::{create_minimal_symmetrical_hexasphere, MinimalSymmetricalConfig};
 pub use proper_symmetrical::{create_proper_symmetrical_hexasphere, ProperSymmetricalConfig};
 pub use simple_proper_symmetrical::{create_simple_proper_symmetrical_hexasphere, SimpleProperSymmetricalConfig};
+pub use working_proper_symmetrical::{create_working_proper_symmetrical_hexasphere, WorkingProperSymmetricalConfig};
